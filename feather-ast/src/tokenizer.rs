@@ -1,4 +1,5 @@
 use regex::Regex;
+use serde::Serialize;
 use std::cmp;
 use std::fmt::{Display, Formatter};
 
@@ -7,7 +8,9 @@ struct TokenDef {
     regex: Regex,
 }
 
+#[derive(Serialize)]
 pub struct Token {
+    #[serde(rename = "type")]
     type_id: String,
     value: Option<String>,
     line: usize,
