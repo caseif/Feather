@@ -56,7 +56,7 @@ fn do_tokenize(args: TokenizeArgs) {
         },
     };
 
-    let mut out_file = match args.output_file {
+    let out_file = match args.output_file {
         Some(path) => {
             match File::create(path) {
                 Ok(f) => Box::new(f) as Box<dyn Write>,
@@ -69,10 +69,8 @@ fn do_tokenize(args: TokenizeArgs) {
         None => Box::new(stdout()) as Box<dyn Write>,
     };
 
-    for token in tokens {
-        if let Err(e) = writeln!(out_file, "{}", token) {
-            eprintln!("Failed to write to output file: {e}");
-            exit(exitcode::IOERR);
-        }
+    if let Err(e) = serde_json::to_writer_pretty(out_file, &tokens) {
+        eprintln!("Failed to write to output file: {e}");
+        exit(exitcode::IOERR);
     }
 }
