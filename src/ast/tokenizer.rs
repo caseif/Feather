@@ -24,6 +24,12 @@ impl Display for Token {
     }
 }
 
+pub struct InvalidTokenError {
+    pub line: usize,
+    pub col: usize,
+    pub line_content: String,
+}
+
 fn compile_regex_unchecked(re: &str) -> Regex {
     Regex::new(re).expect("Failed to compile regular expression")
 }
@@ -80,7 +86,7 @@ fn get_token_defs() -> Vec<TokenDef> {
     ]
 }
 
-pub fn tokenize(str: &String) -> Result<Vec<Token>, String> {
+pub fn tokenize(str: &String) -> Result<Vec<Token>, InvalidTokenError> {
     let token_defs = get_token_defs();
 
     let mut tokens = Vec::<Token>::new();
@@ -132,10 +138,11 @@ pub fn tokenize(str: &String) -> Result<Vec<Token>, String> {
         }
 
         if !found_token {
-            let line_content = str[(last_newline_pos + 1)..next_newline_pos].to_string();
-            let caret_line = format!("{: >1$}", "^", col_num);
-
-            return Err(format!("Unexpected token at input:{line_num}:{col_num}\n{line_content}\n{caret_line}"));
+            return Err(InvalidTokenError {
+                line: line_num,
+                col: col_num,
+                line_content: str[(last_newline_pos + 1)..next_newline_pos].to_string(),
+            });
         }
     }
 

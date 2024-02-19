@@ -19,7 +19,8 @@ fn main() {
     let tokens = match tokenizer::tokenize(&input_str) {
         Ok(t) => t,
         Err(e) => {
-            eprintln!("{}", e);
+            let caret_line = format!("{: >1$}", "^", e.col);
+            eprint!("Unexpected token at input:{}:{}\n{}\n{caret_line}\n", e.line, e.col, e.line_content);
             exit(1);
         },
     };
