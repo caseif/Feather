@@ -10,3 +10,4 @@ name = "feather-cli"
 
 [dependencies]
 feather-ast = { path = "../feather-ast" }
+structopt = "0.3"

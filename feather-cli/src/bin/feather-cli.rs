@@ -1,46 +1,48 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, stdout, Write};
+use std::path::PathBuf;
 use std::process::exit;
+use structopt::StructOpt;
 
 use featherast::tokenizer;
 
-const ACTION_TOKENIZE: &str = "tokenize";
-
-const ALL_ACTIONS: [&str; 1] = [
-    ACTION_TOKENIZE
-];
-
-fn main() {
-    let args = std::env::args();
-    if args.len() < 2 {
-        eprintln!("Usage: feather-cli <action> [args]");
-        exit(1);
-    }
-
-    let args_vec: Vec<String> = args.collect();
-    let action = &args_vec[1];
-
-    match action.as_str() {
-        ACTION_TOKENIZE => do_tokenize(args_vec.iter().skip(2).collect()),
-        _ => {
-            let mut sorted_actions = ALL_ACTIONS.clone();
-            sorted_actions.sort();
-            eprintln!("Invalid action '{action}'\nPossible actions:");
-            for avail_action in sorted_actions {
-                eprintln!("    {avail_action}");
-            }
-        },
-    };
+#[derive(Debug, PartialEq, StructOpt)]
+struct TokenizeArgs {
+    #[structopt(parse(from_os_str))]
+    input_file: PathBuf,
+    #[structopt(short, long, parse(from_os_str))]
+    output_file: Option<PathBuf>,
 }
 
-fn do_tokenize(args: Vec<&String>) {
-    if args.len() < 1 {
-        eprintln!("Usage: feather-cli tokenize <input file>");
-        exit(1);
-    }
+#[derive(Debug, PartialEq, StructOpt)]
+#[structopt(about = "Transforms an input file into a sequence of discrete tokens")]
+enum Subcommand {
+    Tokenize(TokenizeArgs),
+}
 
-    let input_file_name = args[0];
-    let mut input_file = File::open(input_file_name).unwrap();
+#[derive(Debug, PartialEq, StructOpt)]
+#[structopt(name = "feather-cli", about = "Utilities for working with Feather sources")]
+struct GeneralArgs {
+    #[structopt(subcommand)]
+    subcommand: Subcommand,
+}
+
+fn main() {
+    let args = GeneralArgs::from_args();
+    match args.subcommand {
+        Subcommand::Tokenize(sub) => do_tokenize(sub),
+    }
+}
+
+fn do_tokenize(args: TokenizeArgs) {
+    let input_file_path = args.input_file;
+    let mut input_file = match File::open(input_file_path) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("Failed to open input file: {e}");
+            exit(1);
+        },
+    };
     let mut input_str: String = String::new();
     input_file.read_to_string(&mut input_str).unwrap();
 
@@ -53,7 +55,23 @@ fn do_tokenize(args: Vec<&String>) {
         },
     };
 
+    let mut out_file = match args.output_file {
+        Some(path) => {
+            match File::create(path) {
+                Ok(f) => Box::new(f) as Box<dyn Write>,
+                Err(e) => {
+                    eprintln!("Failed to open output file: {e}");
+                    exit(1);
+                },
+            }
+        },
+        None => Box::new(stdout()) as Box<dyn Write>,
+    };
+
     for token in tokens {
-        println!("{}", token);
+        if let Err(e) = writeln!(out_file, "{}", token) {
+            eprintln!("Failed to write to output file: {e}");
+            exit(1);
+        }
     }
 }
