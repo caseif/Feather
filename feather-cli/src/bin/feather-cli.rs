@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{Read, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
+use exitcode;
 use structopt::StructOpt;
 
 use featherast::tokenizer;
@@ -40,7 +41,7 @@ fn do_tokenize(args: TokenizeArgs) {
         Ok(f) => f,
         Err(e) => {
             eprintln!("Failed to open input file: {e}");
-            exit(1);
+            exit(exitcode::NOINPUT);
         },
     };
     let mut input_str: String = String::new();
@@ -51,7 +52,7 @@ fn do_tokenize(args: TokenizeArgs) {
         Err(e) => {
             let caret_line = format!("{: >1$}", "^", e.col);
             eprint!("Unexpected token at input:{}:{}\n{}\n{caret_line}\n", e.line, e.col, e.line_content);
-            exit(1);
+            exit(exitcode::DATAERR);
         },
     };
 
@@ -61,7 +62,7 @@ fn do_tokenize(args: TokenizeArgs) {
                 Ok(f) => Box::new(f) as Box<dyn Write>,
                 Err(e) => {
                     eprintln!("Failed to open output file: {e}");
-                    exit(1);
+                    exit(exitcode::CANTCREAT);
                 },
             }
         },
@@ -71,7 +72,7 @@ fn do_tokenize(args: TokenizeArgs) {
     for token in tokens {
         if let Err(e) = writeln!(out_file, "{}", token) {
             eprintln!("Failed to write to output file: {e}");
-            exit(1);
+            exit(exitcode::IOERR);
         }
     }
 }
