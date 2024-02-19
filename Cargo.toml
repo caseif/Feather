@@ -1,0 +1,16 @@
+[package]
+name = "feather_compiler"
+version = "0.0.1"
+edition = "2021"
+license = "LGPL-3.0-only"
+license-file = "./LICENSE.txt"
+
+[lib]
+name = "feather_compiler"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "feather-tokenize"
+
+[dependencies]
+regex = "1.10"
