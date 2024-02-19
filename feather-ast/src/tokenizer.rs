@@ -1,5 +1,5 @@
-use std::cmp;
 use regex::Regex;
+use std::cmp;
 use std::fmt::{Display, Formatter};
 
 struct TokenDef {

@@ -1,0 +1,12 @@
+[package]
+name = "feather-cli"
+version = "0.0.1"
+edition = "2021"
+license = "LGPL-3.0-only"
+license-file = "./LICENSE.txt"
+
+[[bin]]
+name = "feather-cli"
+
+[dependencies]
+feather-ast = { path = "../feather-ast" }

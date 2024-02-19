@@ -1,0 +1,13 @@
+[package]
+name = "feather-ast"
+version = "0.0.1"
+edition = "2021"
+license = "LGPL-3.0-only"
+license-file = "./LICENSE.txt"
+
+[lib]
+name = "featherast"
+crate-type = ["rlib"]
+
+[dependencies]
+regex = "1.10"
