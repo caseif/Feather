@@ -1,0 +1,192 @@
+{
+  "token_types": [
+    {
+      "id": "string_literal",
+      "regex": "\"((?:[\"\\\n]|\\.)*)\""
+    },
+    {
+      "id": "decimal_literal",
+      "regex": "(\\d+\\.\\d+)"
+    },
+    {
+      "id": "integer_literal",
+      "regex": "(\\d+)"
+    },
+    {
+      "id": "hex_literal",
+      "regex": "(0x[0-9A-Fa-f]+)"
+    },
+    {
+      "id": "import",
+      "regex": "import"
+    },
+    {
+      "id": "function_def",
+      "regex": "fn"
+    },
+    {
+      "id": "var_decl",
+      "regex": "let"
+    },
+    {
+      "id": "const_qualifier",
+      "regex": "const\\b"
+    },
+    {
+      "id": "else_if",
+      "regex": "else if"
+    },
+    {
+      "id": "if",
+      "regex": "if"
+    },
+    {
+      "id": "else",
+      "regex": "else"
+    },
+    {
+      "id": "for",
+      "regex": "for"
+    },
+    {
+      "id": "while",
+      "regex": "while"
+    },
+    {
+      "id": "nil",
+      "regex": "nil"
+    },
+    {
+      "id": "range",
+      "regex": "\\.\\."
+    },
+    {
+      "id": "range_inclusive",
+      "regex": "\\.\\.="
+    },
+    {
+      "id": "open_paren",
+      "regex": "\\("
+    },
+    {
+      "id": "close_paren",
+      "regex": "\\)"
+    },
+    {
+      "id": "open_brace",
+      "regex": "\\{"
+    },
+    {
+      "id": "close_brace",
+      "regex": "}"
+    },
+    {
+      "id": "begin_decorator",
+      "regex": "\\[\\["
+    },
+    {
+      "id": "end_decorator",
+      "regex": "]]"
+    },
+    {
+      "id": "open_bracket",
+      "regex": "\\["
+    },
+    {
+      "id": "close_bracket",
+      "regex": "]"
+    },
+    {
+      "id": "static_accessor",
+      "regex": "::"
+    },
+    {
+      "id": "instance_accessor",
+      "regex": "\\."
+    },
+    {
+      "id": "comma",
+      "regex": ","
+    },
+    {
+      "id": "right_arrow",
+      "regex": "->"
+    },
+    {
+      "id": "equals",
+      "regex": "=="
+    },
+    {
+      "id": "not_equals",
+      "regex": "!="
+    },
+    {
+      "id": "less_than",
+      "regex": "<"
+    },
+    {
+      "id": "less_equal",
+      "regex": "<="
+    },
+    {
+      "id": "greater_than",
+      "regex": ">"
+    },
+    {
+      "id": "greater_equal",
+      "regex": ">="
+    },
+    {
+      "id": "and",
+      "regex": "&&"
+    },
+    {
+      "id": "or",
+      "regex": "\\|\\|"
+    },
+    {
+      "id": "not",
+      "regex": "!"
+    },
+    {
+      "id": "assign",
+      "regex": "="
+    },
+    {
+      "id": "plus_assign",
+      "regex": "\\+="
+    },
+    {
+      "id": "minus_assign",
+      "regex": "-="
+    },
+    {
+      "id": "multiply_assign",
+      "regex": "\\*="
+    },
+    {
+      "id": "divide_assign",
+      "regex": "/="
+    },
+    {
+      "id": "plus",
+      "regex": "\\+"
+    },
+    {
+      "id": "minus",
+      "regex": "-"
+    },
+    {
+      "id": "multiply",
+      "regex": "\\*"
+    },
+    {
+      "id": "divide",
+      "regex": "/"
+    },
+    {
+      "id": "identifier",
+      "regex": "([A-Za-z0-9_]+)"
+    }
+  ]
+}

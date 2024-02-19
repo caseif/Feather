@@ -9,6 +9,7 @@ name = "featherast"
 crate-type = ["rlib"]
 
 [dependencies]
+lazy_static = "1.4"
 regex = "1.10"
 serde_json = "1.0"
 serde = { version = "1.0.196", features = ["derive"] }

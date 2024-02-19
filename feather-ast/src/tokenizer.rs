@@ -1,11 +1,19 @@
+use lazy_static::lazy_static;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp;
 use std::fmt::{Display, Formatter};
 
+#[derive(Deserialize)]
 struct TokenDef {
     id: String,
+    #[serde(deserialize_with = "deserialize_regex")]
     regex: Regex,
+}
+
+#[derive(Deserialize)]
+struct TokenDefs {
+    token_types: Vec<TokenDef>,
 }
 
 #[derive(Serialize)]
@@ -21,8 +29,8 @@ pub struct Token {
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.value {
-            Some(val) => write!(f, "{}({}) (:{}:{}) ({})", self.type_id, val, self.line, self.col, self.len),
-            None => write!(f, "{} (:{}:{}) ({})", self.type_id, self.line, self.col, self.len),
+            Some(val) => write!(f, "{}({})", self.type_id, val),
+            None => write!(f, "{}", self.type_id),
         }
     }
 }
@@ -38,64 +46,24 @@ pub struct InvalidTokenError {
     pub line_content: String,
 }
 
+lazy_static! {
+    static ref TOKEN_DEFS: Vec<TokenDef> = serde_json::from_str::<TokenDefs>(include_str!["../res/token_types.json"])
+            .unwrap().token_types;
+}
+
+fn deserialize_regex<'de, D>(deserializer: D) -> Result<Regex, D::Error>
+    where D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    Regex::new(&s).map_err(serde::de::Error::custom)
+}
+
 fn compile_regex_unchecked(re: &str) -> Regex {
     Regex::new(re).expect("Failed to compile regular expression")
 }
 
-fn get_token_defs() -> Vec<TokenDef> {
-    vec![
-        TokenDef { id: "string_literal".to_string(), regex: compile_regex_unchecked(r#"^"((?:[^"\\\n]|\\.)*)""#) },
-        TokenDef { id: "decimal_literal".to_string(), regex: compile_regex_unchecked(r"^(\d+\.\d+)") },
-        TokenDef { id: "integer_literal".to_string(), regex: compile_regex_unchecked(r"^(\d+)") },
-        TokenDef { id: "hex_literal".to_string(), regex: compile_regex_unchecked(r"^(0x[0-9A-Fa-f]+)") },
-        TokenDef { id: "import".to_string(), regex: compile_regex_unchecked(r"^import") },
-        TokenDef { id: "function_def".to_string(), regex: compile_regex_unchecked(r"^fn") },
-        TokenDef { id: "var_decl".to_string(), regex: compile_regex_unchecked(r"^let") },
-        TokenDef { id: "const_qualifier".to_string(), regex: compile_regex_unchecked(r"^const\b") },
-        TokenDef { id: "else_if".to_string(), regex: compile_regex_unchecked(r"^else if") },
-        TokenDef { id: "if".to_string(), regex: compile_regex_unchecked(r"^if") },
-        TokenDef { id: "else".to_string(), regex: compile_regex_unchecked(r"^else") },
-        TokenDef { id: "for".to_string(), regex: compile_regex_unchecked(r"^for") },
-        TokenDef { id: "while".to_string(), regex: compile_regex_unchecked(r"^while") },
-        TokenDef { id: "nil".to_string(), regex: compile_regex_unchecked(r"^nil") },
-        TokenDef { id: "range".to_string(), regex: compile_regex_unchecked(r"^\.\.") },
-        TokenDef { id: "range_inclusive".to_string(), regex: compile_regex_unchecked(r"^\.\.=") },
-        TokenDef { id: "open_paren".to_string(), regex: compile_regex_unchecked(r"^\(") },
-        TokenDef { id: "close_paren".to_string(), regex: compile_regex_unchecked(r"^\)") },
-        TokenDef { id: "open_brace".to_string(), regex: compile_regex_unchecked(r"^\{") },
-        TokenDef { id: "close_brace".to_string(), regex: compile_regex_unchecked(r"^}") },
-        TokenDef { id: "begin_decorator".to_string(), regex: compile_regex_unchecked(r"^\[\[") },
-        TokenDef { id: "end_decorator".to_string(), regex: compile_regex_unchecked(r"^]]") },
-        TokenDef { id: "open_bracket".to_string(), regex: compile_regex_unchecked(r"^\[") },
-        TokenDef { id: "close_bracket".to_string(), regex: compile_regex_unchecked(r"^]") },
-        TokenDef { id: "static_accessor".to_string(), regex: compile_regex_unchecked(r"^::") },
-        TokenDef { id: "instance_accessor".to_string(), regex: compile_regex_unchecked(r"^\.") },
-        TokenDef { id: "comma".to_string(), regex: compile_regex_unchecked(r"^,") },
-        TokenDef { id: "right_arrow".to_string(), regex: compile_regex_unchecked(r"^->") },
-        TokenDef { id: "equals".to_string(), regex: compile_regex_unchecked(r"^==") },
-        TokenDef { id: "not_equals".to_string(), regex: compile_regex_unchecked(r"^!=") },
-        TokenDef { id: "less_than".to_string(), regex: compile_regex_unchecked(r"^<") },
-        TokenDef { id: "less_equal".to_string(), regex: compile_regex_unchecked(r"^<=") },
-        TokenDef { id: "greater_than".to_string(), regex: compile_regex_unchecked(r"^>") },
-        TokenDef { id: "greater_equal".to_string(), regex: compile_regex_unchecked(r"^>=") },
-        TokenDef { id: "and".to_string(), regex: compile_regex_unchecked(r"^&&") },
-        TokenDef { id: "or".to_string(), regex: compile_regex_unchecked(r"^\|\|") },
-        TokenDef { id: "not".to_string(), regex: compile_regex_unchecked(r"^!") },
-        TokenDef { id: "assign".to_string(), regex: compile_regex_unchecked(r"^=") },
-        TokenDef { id: "plus_assign".to_string(), regex: compile_regex_unchecked(r"^\+=") },
-        TokenDef { id: "minus_assign".to_string(), regex: compile_regex_unchecked(r"^-=") },
-        TokenDef { id: "multiply_assign".to_string(), regex: compile_regex_unchecked(r"^\*=") },
-        TokenDef { id: "divide_assign".to_string(), regex: compile_regex_unchecked(r"^/=") },
-        TokenDef { id: "plus".to_string(), regex: compile_regex_unchecked(r"^\+") },
-        TokenDef { id: "minus".to_string(), regex: compile_regex_unchecked(r"^-") },
-        TokenDef { id: "multiply".to_string(), regex: compile_regex_unchecked(r"^\*") },
-        TokenDef { id: "divide".to_string(), regex: compile_regex_unchecked(r"^/") },
-        TokenDef { id: "identifier".to_string(), regex: compile_regex_unchecked(r"^([A-Za-z0-9_]+)") },
-    ]
-}
-
 pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
-    let token_defs = get_token_defs();
+    let token_defs = &TOKEN_DEFS;
 
     let mut tokens = Vec::<Token>::new();
     let mut cursor = 0;
