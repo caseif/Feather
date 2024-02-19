@@ -27,6 +27,11 @@ impl Display for Token {
     }
 }
 
+#[derive(Serialize)]
+pub struct TokenList {
+    tokens: Vec<Token>,
+}
+
 pub struct InvalidTokenError {
     pub line: usize,
     pub col: usize,
@@ -89,7 +94,7 @@ fn get_token_defs() -> Vec<TokenDef> {
     ]
 }
 
-pub fn tokenize(str: &String) -> Result<Vec<Token>, InvalidTokenError> {
+pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
     let token_defs = get_token_defs();
 
     let mut tokens = Vec::<Token>::new();
@@ -149,5 +154,5 @@ pub fn tokenize(str: &String) -> Result<Vec<Token>, InvalidTokenError> {
         }
     }
 
-    return Ok(tokens);
+    return Ok(TokenList { tokens });
 }
