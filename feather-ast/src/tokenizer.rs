@@ -4,7 +4,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp;
 use std::fmt::{Display, Formatter};
 
-const MAGIC_EOF_TOKEN: &str = "$";
+const TOKEN_EOF: &str = "$";
+const TOKEN_NEWLINE: &str = "Newline";
 
 #[derive(Deserialize)]
 struct TokenDef {
@@ -78,6 +79,8 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
 
     let ws_regex = compile_regex_unchecked(r"^[\r\t\f\v ]+");
 
+    let mut last_token_type: Option<&String> = None;
+
     while cursor < str.len() {
         if let Some(m) = ws_regex.find(&str[cursor..]) {
             cursor += m.end();
@@ -103,6 +106,14 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
                     } else {
                         None
                     };
+
+                    if token_def.id == TOKEN_NEWLINE && last_token_type.is_some_and(|t| t == TOKEN_NEWLINE) {
+                        // combine multiple consecutive newlines
+                        found_token = true;
+                        continue;
+                    }
+
+                    last_token_type = Some(&token_def.id);
 
                     tokens.push(Token {
                         type_id: token_def.id.to_owned(),
@@ -132,9 +143,9 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
 
     let last_line = str.chars().filter(|c| c == &'\n').count() + 1;
     let last_line_last_col = cmp::max(1, str.len() - str.rfind('\n').unwrap_or(str.len()));
-    if tokens[tokens.len() - 1].type_id != "Newline" {
+    if tokens[tokens.len() - 1].type_id != TOKEN_NEWLINE {
         tokens.push(Token {
-            type_id: "Newline".to_string(),
+            type_id: TOKEN_NEWLINE.to_string(),
             value: None,
             line: last_line,
             col: last_line_last_col,
@@ -142,7 +153,7 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
         });
     }
     tokens.push(Token {
-        type_id: MAGIC_EOF_TOKEN.to_string(),
+        type_id: TOKEN_EOF.to_string(),
         value: None,
         line: last_line,
         col: last_line_last_col,

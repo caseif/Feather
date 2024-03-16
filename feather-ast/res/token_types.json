@@ -33,7 +33,11 @@
       "regex": "import"
     },
     {
-      "id": "FunctionDef",
+      "id": "ClassDefKeyword",
+      "regex": "class"
+    },
+    {
+      "id": "FunctionDefKeyword",
       "regex": "fn"
     },
     {

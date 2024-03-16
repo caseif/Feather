@@ -1,3 +1,6 @@
+OptNewline      := (Newline)
+                 | Epsilon
+
 IntType         := (TypeInt8)
                  | (TypeInt16)
                  | (TypeInt32)
@@ -185,18 +188,35 @@ IfChainPrime    := ElseIfStatement IfChainPrime
 
 ImportStatement := (Import) (Identifier)
 
-FnParamDefs     :=  (Identifier) FnParamDefsPrime
+FnParamDefs     :=  (Identifier) FnPmDefsPrime
                  | Epsilon
 
-FnParamDefsPrime    := (Comma) Type (Identifier) FnParamDefsPrime
-                     | Epsilon
+FnPmDefsPrime   := (Comma) Type (Identifier) FnPmDefsPrime
+                 | Epsilon
 
 FnReturnType    := (RightArrow) Type
                  | Epsilon
 
-FunctionSig     := (FunctionDef) (Identifier) (OpenParen) FnParamDefs (CloseParen) FnReturnType
+FunctionSig     := (FunctionDefKeyword) (Identifier) (OpenParen) FnParamDefs (CloseParen) FnReturnType
 
 FunctionDef     := FunctionSig Block
+
+ClassField      := (Identifier) TypeAnnotation (Assign) (Expression)
+                 | (Identifier) TypeAnnotation
+
+ClassFields     := ClassField (Newline) ClassFldsPrime
+                 | Epsilon
+
+ClassFldsPrime  := ClassField (Newline) ClassFldsPrime
+                 | Epsilon
+
+ClassFunctions  := FunctionDef (Newline) ClassFnsPrime
+                 | Epsilon
+
+ClassFnsPrime   := FunctionDef (Newline) ClassFnsPrime
+                 | Epsilon
+
+ClassDef        := (ClassDefKeyword) (Identifier) (OpenBrace) (Newline) ClassFields ClassFunctions (CloseBrace)
 
 ReturnStatement := (Return) Expression
                  | (Return)
@@ -211,6 +231,7 @@ Annotatable     := FunctionDef
 StatementEnd    := (Newline)
 
 StatementNaught := FunctionDef
+                 | ClassDef
                  | ImportStatement
                  | FnInvocation
                  | ReturnStatement
