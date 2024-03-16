@@ -20,7 +20,10 @@ BuiltInType     := IntType
                  | (TypeChar)
                  | (TypeString)
 
-ArrayModifier   := (OpenBracket) Expression (CloseBracket)
+ArrayModNaught  := Expression
+                 | Epsilon
+
+ArrayModifier   := (OpenBracket) ArrayModNaught (CloseBracket)
 
 TupleTypes      := Type (Comma) TupleTypes
                  | Type
@@ -61,6 +64,14 @@ RangeDelimiter  := (Range)
                  | (RangeInclusive)
 
 SliceAccess     := (OpenBracket) SliceBound RangeDelimiter SliceBound (CloseBracket)
+
+InitListEntries := Expression InitEntsPrime
+                 | Epsilon
+
+InitEntsPrime   := (Comma) Expression InitEntsPrime
+                 | Epsilon
+
+InitList        := (OpenBrace) InitListEntries (CloseBrace)
 
 OpNumUnary      := (Hyphen)
 
@@ -124,6 +135,7 @@ Primary         := (Identifier)
                  | Primary IndexAccess
                  | Primary SliceAccess
                  | Tuple
+                 | InitList
 
 FnParamList     := Expression FnParamListPrime
                  | Epsilon
