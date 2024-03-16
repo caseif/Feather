@@ -69,13 +69,16 @@ impl Expression {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Cst {
-    pub root: Expression,
+    pub root: CstNode,
 }
 
 impl Cst {
     fn add_child(&mut self, parent_path: &CstPath, node: CstNode) -> Result<CstPath, InvalidCstPathError> {
         let mut subpath = parent_path.as_slice();
-        let mut cur_child = &mut self.root;
+        let mut cur_child = match &mut self.root {
+            CstNode::Expression(expr) => expr,
+            _ => panic!("Root node is not an expression"),
+        };
         while !subpath.is_empty() {
             let cur_index = subpath[0];
 
@@ -111,7 +114,10 @@ impl Cst {
         }
 
         let mut subpath = path.as_slice();
-        let mut cur_child = &mut self.root;
+        let mut cur_child = match &mut self.root {
+            CstNode::Expression(expr) => expr,
+            _ => panic!("Root node is not an expression"),
+        };
         while subpath.len() > 1 {
             let cur_index = subpath[0];
             if cur_index >= cur_child.children.len() {
@@ -720,6 +726,7 @@ pub fn generate_cst(tokens: TokenList) -> Result<Cst, ParseError> {
 
         let key = ActionTableKey { state, token: token.type_id.clone() };
         if !action_table.contains_key(&key) {
+            //println!("Failed in state {} on token {}", state, token.type_id);
             return Err(ParseError { next_token: token.clone() });
         }
 
@@ -771,9 +778,6 @@ pub fn generate_cst(tokens: TokenList) -> Result<Cst, ParseError> {
         }
     }
 
-    let (_, CstNode::Expression(start_expr)) = stack.pop().expect("Failed to pop final state")
-            else { panic!("Final state does not contain expression"); };
-    let CstNode::Expression(root_expr) = start_expr.children.first().expect("Failed to get root node")
-            else { panic!("Start node does not have expression as first child"); };
-    return Ok(Cst { root: root_expr.clone() });
+    let (_, root_node) = stack.pop().expect("Failed to pop final state");
+    return Ok(Cst { root: root_node });
 }
