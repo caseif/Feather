@@ -48,7 +48,7 @@ Literal         := (StringLiteral)
                  | (Nil)
                  | BooleanLiteral
 
-Parenthetical   := (OpenParen) Expression (CloseParen)
+Parenthetical   := (OpenParen) OptNewline Expression OptNewline (CloseParen)
 
 TupleElements   := Expression (Comma) TupleElsPrime
 
@@ -68,10 +68,8 @@ RangeDelimiter  := (Range)
 
 SliceAccess     := (OpenBracket) SliceBound RangeDelimiter SliceBound (CloseBracket)
 
-InitListEntries := Expression InitEntsPrime
-                 | Epsilon
-
-InitEntsPrime   := (Comma) Expression InitEntsPrime
+InitListEntries := Expression (Comma) OptNewline InitListEntries
+                 | Expression
                  | Epsilon
 
 InitList        := (OpenBrace) InitListEntries (CloseBrace)
@@ -116,18 +114,23 @@ Lval            := VarDecl
                  | ConstDecl
                  | (Identifier)
 
-StaticAccess    := Primary (StaticAccessor) (Identifier)
+StaticAccess    := Primary (StaticAccessor) OptNewline (Identifier)
 
-InstanceAccess  := Primary (InstanceAccessor) (Identifier)
+InstanceAccess  := Primary (InstanceAccessor) OptNewline (Identifier)
 
 Invokable       := (Identifier)
                  | StaticAccess
                  | InstanceAccess
                  | FnInvocation
                  | Parenthetical
-                 | FnInvocation
 
-FnInvocation    := Invokable (OpenParen) FnParamList (CloseParen)
+FnParamList     := Expression FnParamListPrime
+                 | Epsilon
+
+FnParamListPrime    := (Comma) OptNewline Expression FnParamListPrime
+                     | Epsilon
+
+FnInvocation    := Invokable (OpenParen) OptNewline FnParamList OptNewline (CloseParen)
 
 Primary         := (Identifier)
                  | StaticAccess
@@ -140,45 +143,39 @@ Primary         := (Identifier)
                  | Tuple
                  | InitList
 
-FnParamList     := Expression FnParamListPrime
-                 | Epsilon
-
-FnParamListPrime    := (Comma) Expression FnParamListPrime
-                     | Epsilon
-
 ExprOpUnary     := OpNumUnary ExprOpUnary
                  | OpBoolUnary ExprOpUnary
                  | Primary
 
-ExprOpNumMult   := ExprOpUnary OpNumMult ExprOpNumMult
+ExprOpNumMult   := ExprOpUnary OpNumMult OptNewline ExprOpNumMult
                  | ExprOpUnary
 
-ExprOpNumAdd    := ExprOpNumMult OpNumAdd ExprOpNumAdd
+ExprOpNumAdd    := ExprOpNumMult OpNumAdd OptNewline ExprOpNumAdd
                  | ExprOpNumMult
 
-ExprOpBoolRel   := ExprOpNumAdd OpBoolRel ExprOpBoolRel
+ExprOpBoolRel   := ExprOpNumAdd OpBoolRel OptNewline ExprOpBoolRel
                  | ExprOpNumAdd
 
-ExprOpBoolEq    := ExprOpBoolRel OpBoolEq ExprOpBoolEq
+ExprOpBoolEq    := ExprOpBoolRel OpBoolEq OptNewline ExprOpBoolEq
                  | ExprOpBoolRel
 
-ExprOpBoolAnd   := ExprOpBoolEq OpBoolAnd ExprOpBoolAnd
+ExprOpBoolAnd   := ExprOpBoolEq OpBoolAnd OptNewline ExprOpBoolAnd
                  | ExprOpBoolEq
 
-ExprOpBoolOr    := ExprOpBoolOr OpBoolOr ExprOpBoolOr
+ExprOpBoolOr    := ExprOpBoolOr OpBoolOr OptNewline ExprOpBoolOr
                  | ExprOpBoolAnd
 
 Expression      := ExprOpBoolOr
 
-Assignment      := Lval (Assign) Expression
+Assignment      := Lval (Assign) OptNewline Expression
 
 Block           := (OpenBrace) StatementList (CloseBrace)
 
-IfStatement     := (If) Expression Block
+IfStatement     := (If) Expression OptNewline Block
 
-ElseIfStatement := (ElseIf) Expression Block
+ElseIfStatement := (ElseIf) Expression OptNewline Block
 
-ElseStatement   := (Else) Block
+ElseStatement   := (Else) OptNewline Block
 
 IfChain         := IfStatement IfChainPrime
 
@@ -188,18 +185,20 @@ IfChainPrime    := ElseIfStatement IfChainPrime
 
 ImportStatement := (Import) (Identifier)
 
-FnParamDefs     :=  (Identifier) FnPmDefsPrime
+FnParamDefs     := (Identifier) TypeAnnotation FnPmDefsPrime
+                 | (Identifier) FnPmDefsPrime
                  | Epsilon
 
-FnPmDefsPrime   := (Comma) Type (Identifier) FnPmDefsPrime
+FnPmDefsPrime   := (Comma) OptNewline (Identifier) TypeAnnotation FnPmDefsPrime
+                 | (Comma) OptNewline (Identifier) FnPmDefsPrime
                  | Epsilon
 
 FnReturnType    := (RightArrow) Type
                  | Epsilon
 
-FunctionSig     := (FunctionDefKeyword) (Identifier) (OpenParen) FnParamDefs (CloseParen) FnReturnType
+FunctionSig     := (FunctionDefKeyword) (Identifier) (OpenParen) OptNewline FnParamDefs OptNewline (CloseParen) OptNewline FnReturnType
 
-FunctionDef     := FunctionSig Block
+FunctionDef     := FunctionSig OptNewline Block
 
 ClassField      := (Identifier) TypeAnnotation (Assign) (Expression)
                  | (Identifier) TypeAnnotation
@@ -216,7 +215,7 @@ ClassFunctions  := FunctionDef (Newline) ClassFnsPrime
 ClassFnsPrime   := FunctionDef (Newline) ClassFnsPrime
                  | Epsilon
 
-ClassDef        := (ClassDefKeyword) (Identifier) (OpenBrace) (Newline) ClassFields ClassFunctions (CloseBrace)
+ClassDef        := (ClassDefKeyword) (Identifier) OptNewline (OpenBrace) (Newline) ClassFields ClassFunctions (CloseBrace)
 
 ReturnStatement := (Return) Expression
                  | (Return)
