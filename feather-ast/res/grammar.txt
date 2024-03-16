@@ -1,0 +1,203 @@
+IntType         := (TypeInt8)
+                 | (TypeInt16)
+                 | (TypeInt32)
+                 | (TypeInt64)
+
+UintType        := (TypeUint8)
+                 | (TypeUint16)
+                 | (TypeUint32)
+                 | (TypeUint64)
+
+FloatType       := (TypeFloat8)
+                 | (TypeFloat16)
+                 | (TypeFloat32)
+                 | (TypeFloat64)
+
+BuiltInType     := IntType
+                 | UintType
+                 | FloatType
+                 | (TypeBool)
+                 | (TypeChar)
+                 | (TypeString)
+
+ArrayModifier   := (OpenBracket) Expression (CloseBracket)
+
+Type            := BuiltInType
+                 | (Identifier)
+                 | Type ArrayModifier
+
+BooleanLiteral  := (TrueLiteral)
+                 | (FalseLiteral)
+
+Literal         := (StringLiteral)
+                 | (IntegerLiteral)
+                 | (HexLiteral)
+                 | (DecimalLiteral)
+                 | (Nil)
+                 | BooleanLiteral
+
+Parenthetical   := (OpenParen) Expression (CloseParen)
+
+IndexAccess     := (OpenBracket) Expression (CloseBracket)
+
+SliceBound      := Primary
+                 | Epsilon
+
+RangeDelimiter  := (Range)
+                 | (RangeInclusive)
+
+SliceAccess     := (OpenBracket) SliceBound RangeDelimiter SliceBound (CloseBracket)
+
+OpNumUnary      := (Hyphen)
+
+OpBoolUnary     := (Not)
+
+OpNumMult       := (Asterisk)
+                 | (ForwardSlash)
+
+OpNumAdd        := (Plus)
+                 | (Hyphen)
+                 | (Percent)
+
+OpBoolRel       := (LessThan)
+                 | (LessEqual)
+                 | (GreaterThan)
+                 | (GreaterEqual)
+
+OpBoolEq        := (Equals)
+                 | (NotEquals)
+
+OpBoolAnd       := (And)
+
+OpBoolOr        := (Or)
+
+AddSubOperator  := (Plus)
+                 | (Hyphen)
+
+MulDivOperator  := (Asterisk)
+                 | (ForwardSlash)
+
+TypeAnnotation  := (Colon) Type
+
+VarDecl         := (VarDeclKeyword) (Identifier) TypeAnnotation
+                 | (VarDeclKeyword) (Identifier)
+
+ConstDecl       := (ConstQualifier) (Identifier) TypeAnnotation
+
+Lval            := VarDecl
+                 | ConstDecl
+                 | (Identifier)
+
+StaticAccess    := Primary (StaticAccessor) (Identifier)
+
+InstanceAccess  := Primary (InstanceAccessor) (Identifier)
+
+Invokable       := (Identifier)
+                 | StaticAccess
+                 | InstanceAccess
+                 | FnInvocation
+                 | Parenthetical
+                 | FnInvocation
+
+FnInvocation    := Invokable (OpenParen) FnParamList (CloseParen)
+
+Primary         := (Identifier)
+                 | StaticAccess
+                 | InstanceAccess
+                 | Literal
+                 | Parenthetical
+                 | FnInvocation
+                 | Primary IndexAccess
+                 | Primary SliceAccess
+
+FnParamList     := Expression FnParamListPrime
+                 | Epsilon
+
+FnParamListPrime    := (Comma) Expression FnParamListPrime
+                     | Epsilon
+
+ExprOpUnary     := OpNumUnary ExprOpUnary
+                 | OpBoolUnary ExprOpUnary
+                 | Primary
+
+ExprOpNumMult   := ExprOpUnary OpNumMult ExprOpNumMult
+                 | ExprOpUnary
+
+ExprOpNumAdd    := ExprOpNumMult OpNumAdd ExprOpNumAdd
+                 | ExprOpNumMult
+
+ExprOpBoolRel   := ExprOpNumAdd OpBoolRel ExprOpBoolRel
+                 | ExprOpNumAdd
+
+ExprOpBoolEq    := ExprOpBoolRel OpBoolEq ExprOpBoolEq
+                 | ExprOpBoolRel
+
+ExprOpBoolAnd   := ExprOpBoolEq OpBoolAnd ExprOpBoolAnd
+                 | ExprOpBoolEq
+
+ExprOpBoolOr    := ExprOpBoolOr OpBoolOr ExprOpBoolOr
+                 | ExprOpBoolAnd
+
+Expression      := ExprOpBoolOr
+
+Assignment      := Lval (Assign) Expression
+
+Block           := (OpenBrace) StatementList (CloseBrace)
+
+IfStatement     := (If) Expression Block
+
+ElseIfStatement := (ElseIf) Expression Block
+
+ElseStatement   := (Else) Block
+
+IfChain         := IfStatement IfChainPrime
+
+IfChainPrime    := ElseIfStatement IfChainPrime
+                 | ElseStatement
+                 | Epsilon
+
+ImportStatement := (Import) (Identifier)
+
+FnParamDefs     :=  (Identifier) FnParamDefsPrime
+                 | Epsilon
+
+FnParamDefsPrime    := (Comma) Type (Identifier) FnParamDefsPrime
+                     | Epsilon
+
+FnReturnType    := (RightArrow) Type
+                 | Epsilon
+
+FunctionSig     := (FunctionDef) (Identifier) (OpenParen) FnParamDefs (CloseParen) FnReturnType
+
+FunctionDef     := FunctionSig Block
+
+ReturnStatement := (Return) Expression
+                 | (Return)
+
+AnnotationBody  := (Identifier)
+                 | Literal
+
+Annotation      := (AnnotationBegin) AnnotationBody (AnnotationEnd)
+
+Annotatable     := FunctionDef
+
+StatementEnd    := (Newline)
+
+StatementNaught := FunctionDef
+                 | ImportStatement
+                 | FnInvocation
+                 | ReturnStatement
+                 | Assignment
+                 | VarDecl
+                 | ConstDecl
+                 | IfChain
+                 | Block
+                 | Annotation StatementEnd Annotatable
+
+Statement       := StatementNaught StatementEnd
+
+StatementList   := Statement StatementList
+                 | StatementEnd StatementList
+                 | Epsilon
+
+Program         := StatementList

@@ -1,191 +1,284 @@
 {
   "token_types": [
     {
-      "id": "string_literal",
-      "regex": "\"((?:[\"\\\n]|\\.)*)\""
+      "id": "StringLiteral",
+      "regex": "\"((?:[^\"\\\n]|\\.)*)\""
     },
     {
-      "id": "decimal_literal",
+      "id": "Newline",
+      "regex": "\\n"
+    },
+    {
+      "id": "DecimalLiteral",
       "regex": "(\\d+\\.\\d+)"
     },
     {
-      "id": "integer_literal",
+      "id": "IntegerLiteral",
       "regex": "(\\d+)"
     },
     {
-      "id": "hex_literal",
+      "id": "HexLiteral",
       "regex": "(0x[0-9A-Fa-f]+)"
     },
     {
-      "id": "import",
+      "id": "TrueLiteral",
+      "regex": "true"
+    },
+    {
+      "id": "FalseLiteral",
+      "regex": "false"
+    },
+    {
+      "id": "Import",
       "regex": "import"
     },
     {
-      "id": "function_def",
+      "id": "FunctionDef",
       "regex": "fn"
     },
     {
-      "id": "var_decl",
+      "id": "VarDeclKeyword",
       "regex": "let"
     },
     {
-      "id": "const_qualifier",
+      "id": "ConstQualifier",
       "regex": "const\\b"
     },
     {
-      "id": "else_if",
+      "id": "ElseIf",
       "regex": "else if"
     },
     {
-      "id": "if",
+      "id": "If",
       "regex": "if"
     },
     {
-      "id": "else",
+      "id": "Else",
       "regex": "else"
     },
     {
-      "id": "for",
+      "id": "For",
       "regex": "for"
     },
     {
-      "id": "while",
+      "id": "While",
       "regex": "while"
     },
     {
-      "id": "nil",
+      "id": "Break",
+      "regex": "break"
+    },
+    {
+      "id": "Continue",
+      "regex": "continue"
+    },
+    {
+      "id": "Return",
+      "regex": "return"
+    },
+    {
+      "id": "Nil",
       "regex": "nil"
     },
     {
-      "id": "range",
+      "id": "Range",
       "regex": "\\.\\."
     },
     {
-      "id": "range_inclusive",
+      "id": "RangeInclusive",
       "regex": "\\.\\.="
     },
     {
-      "id": "open_paren",
+      "id": "OpenParen",
       "regex": "\\("
     },
     {
-      "id": "close_paren",
+      "id": "CloseParen",
       "regex": "\\)"
     },
     {
-      "id": "open_brace",
+      "id": "OpenBrace",
       "regex": "\\{"
     },
     {
-      "id": "close_brace",
+      "id": "CloseBrace",
       "regex": "}"
     },
     {
-      "id": "begin_decorator",
+      "id": "AnnotationBegin",
       "regex": "\\[\\["
     },
     {
-      "id": "end_decorator",
+      "id": "AnnotationEnd",
       "regex": "]]"
     },
     {
-      "id": "open_bracket",
+      "id": "OpenBracket",
       "regex": "\\["
     },
     {
-      "id": "close_bracket",
+      "id": "CloseBracket",
       "regex": "]"
     },
     {
-      "id": "static_accessor",
+      "id": "StaticAccessor",
       "regex": "::"
     },
     {
-      "id": "instance_accessor",
+      "id": "InstanceAccessor",
       "regex": "\\."
     },
     {
-      "id": "comma",
+      "id": "Comma",
       "regex": ","
     },
     {
-      "id": "right_arrow",
+      "id": "RightArrow",
       "regex": "->"
     },
     {
-      "id": "equals",
+      "id": "Colon",
+      "regex": ":"
+    },
+    {
+      "id": "Equals",
       "regex": "=="
     },
     {
-      "id": "not_equals",
+      "id": "NotEquals",
       "regex": "!="
     },
     {
-      "id": "less_than",
+      "id": "LessThan",
       "regex": "<"
     },
     {
-      "id": "less_equal",
+      "id": "LessEqual",
       "regex": "<="
     },
     {
-      "id": "greater_than",
+      "id": "GreaterThan",
       "regex": ">"
     },
     {
-      "id": "greater_equal",
+      "id": "GreaterEqual",
       "regex": ">="
     },
     {
-      "id": "and",
+      "id": "And",
       "regex": "&&"
     },
     {
-      "id": "or",
+      "id": "Or",
       "regex": "\\|\\|"
     },
     {
-      "id": "not",
+      "id": "Not",
       "regex": "!"
     },
     {
-      "id": "assign",
+      "id": "Assign",
       "regex": "="
     },
     {
-      "id": "plus_assign",
+      "id": "PlusAssign",
       "regex": "\\+="
     },
     {
-      "id": "minus_assign",
+      "id": "MinusAssign",
       "regex": "-="
     },
     {
-      "id": "multiply_assign",
+      "id": "MultiplyAssign",
       "regex": "\\*="
     },
     {
-      "id": "divide_assign",
+      "id": "DivideAssign",
       "regex": "/="
     },
     {
-      "id": "plus",
+      "id": "Plus",
       "regex": "\\+"
     },
     {
-      "id": "minus",
+      "id": "Hyphen",
       "regex": "-"
     },
     {
-      "id": "multiply",
+      "id": "Asterisk",
       "regex": "\\*"
     },
     {
-      "id": "divide",
+      "id": "ForwardSlash",
+      "regex": "/"
+    },
+
+    {
+      "id": "Percent",
       "regex": "/"
     },
     {
-      "id": "identifier",
+      "id": "TypeInt8",
+      "regex": "i8"
+    },
+    {
+      "id": "TypeInt16",
+      "regex": "i16"
+    },
+    {
+      "id": "TypeInt32",
+      "regex": "i32"
+    },
+    {
+      "id": "TypeInt64",
+      "regex": "i64"
+    },
+    {
+      "id": "TypeUint8",
+      "regex": "u8"
+    },
+    {
+      "id": "TypeUint16",
+      "regex": "u16"
+    },
+    {
+      "id": "TypeUint32",
+      "regex": "u32"
+    },
+    {
+      "id": "TypeUint64",
+      "regex": "u64"
+    },
+    {
+      "id": "TypeFloat8",
+      "regex": "i8"
+    },
+    {
+      "id": "TypeFloat16",
+      "regex": "i16"
+    },
+    {
+      "id": "TypeFloat32",
+      "regex": "i32"
+    },
+    {
+      "id": "TypeFloat64",
+      "regex": "i64"
+    },
+    {
+      "id": "TypeBool",
+      "regex": "bool"
+    },
+    {
+      "id": "TypeChar",
+      "regex": "char"
+    },
+    {
+      "id": "TypeString",
+      "regex": "string"
+    },
+    {
+      "id": "Identifier",
       "regex": "([A-Za-z0-9_]+)"
     }
   ]

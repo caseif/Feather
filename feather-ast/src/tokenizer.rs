@@ -1,8 +1,10 @@
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp;
 use std::fmt::{Display, Formatter};
+
+const MAGIC_EOF_TOKEN: &str = "$";
 
 #[derive(Deserialize)]
 struct TokenDef {
@@ -16,14 +18,14 @@ struct TokenDefs {
     token_types: Vec<TokenDef>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Token {
     #[serde(rename = "type")]
-    type_id: String,
-    value: Option<String>,
-    line: usize,
-    col: usize,
-    len: usize,
+    pub type_id: String,
+    pub value: Option<String>,
+    pub line: usize,
+    pub col: usize,
+    pub len: usize,
 }
 
 impl Display for Token {
@@ -35,9 +37,9 @@ impl Display for Token {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct TokenList {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
 }
 
 pub struct InvalidTokenError {
@@ -55,11 +57,17 @@ fn deserialize_regex<'de, D>(deserializer: D) -> Result<Regex, D::Error>
     where D: Deserializer<'de>,
 {
     let s: String = Deserialize::deserialize(deserializer)?;
-    Regex::new(&s).map_err(serde::de::Error::custom)
+    RegexBuilder::new(&("^".to_string() + &s))
+            .build()
+            .map_err(serde::de::Error::custom)
 }
 
 fn compile_regex_unchecked(re: &str) -> Regex {
     Regex::new(re).expect("Failed to compile regular expression")
+}
+
+pub fn get_all_token_defs() -> Vec<String> {
+    return TOKEN_DEFS.iter().map(|t| t.id.clone()).collect();
 }
 
 pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
@@ -68,10 +76,10 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
     let mut tokens = Vec::<Token>::new();
     let mut cursor = 0;
 
-    let ws_regex = compile_regex_unchecked(r"^\s+");
+    let ws_regex = compile_regex_unchecked(r"^[\r\t\f\v ]+");
 
     while cursor < str.len() {
-        while let Some(m) = ws_regex.find(&str[cursor..]) {
+        if let Some(m) = ws_regex.find(&str[cursor..]) {
             cursor += m.end();
         }
 
@@ -121,6 +129,25 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
             });
         }
     }
+
+    let last_line = str.chars().filter(|c| c == &'\n').count() + 1;
+    let last_line_last_col = cmp::max(1, str.len() - str.rfind('\n').unwrap_or(str.len()));
+    if tokens[tokens.len() - 1].type_id != "Newline" {
+        tokens.push(Token {
+            type_id: "Newline".to_string(),
+            value: None,
+            line: last_line,
+            col: last_line_last_col,
+            len: 0,
+        });
+    }
+    tokens.push(Token {
+        type_id: MAGIC_EOF_TOKEN.to_string(),
+        value: None,
+        line: last_line,
+        col: last_line_last_col,
+        len: 0,
+    });
 
     return Ok(TokenList { tokens });
 }
