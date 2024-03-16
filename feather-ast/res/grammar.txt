@@ -22,9 +22,15 @@ BuiltInType     := IntType
 
 ArrayModifier   := (OpenBracket) Expression (CloseBracket)
 
+TupleTypes      := Type (Comma) TupleTypes
+                 | Type
+
+TupleType       := (OpenParen) TupleTypes (CloseParen)
+
 Type            := BuiltInType
                  | (Identifier)
                  | Type ArrayModifier
+                 | TupleType
 
 BooleanLiteral  := (TrueLiteral)
                  | (FalseLiteral)
@@ -37,6 +43,14 @@ Literal         := (StringLiteral)
                  | BooleanLiteral
 
 Parenthetical   := (OpenParen) Expression (CloseParen)
+
+TupleElements   := Expression (Comma) TupleElsPrime
+
+TupleElsPrime   := Expression (Comma) TupleElsPrime
+                 | Expression
+                 | Epsilon
+
+Tuple           := (OpenParen) TupleElements (CloseParen)
 
 IndexAccess     := (OpenBracket) Expression (CloseBracket)
 
@@ -109,6 +123,7 @@ Primary         := (Identifier)
                  | FnInvocation
                  | Primary IndexAccess
                  | Primary SliceAccess
+                 | Tuple
 
 FnParamList     := Expression FnParamListPrime
                  | Epsilon
