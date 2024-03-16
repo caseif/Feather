@@ -40,6 +40,8 @@ enum Subcommand {
     Tokenize(TokenizeArgs),
     #[structopt(about = "Transforms an input file into a concrete syntax tree")]
     BuildCst(BuildCstArgs),
+    #[structopt(about = "Transforms an input file into an abstract syntax tree")]
+    BuildAst(BuildAstArgs),
 }
 
 #[derive(Debug, PartialEq, StructOpt)]
@@ -54,6 +56,7 @@ fn main() {
     match args.subcommand {
         Subcommand::Tokenize(sub) => do_tokenize(sub),
         Subcommand::BuildCst(sub) => do_build_cst(sub),
+        Subcommand::BuildAst(sub) => do_build_ast(sub),
     }
 }
 
