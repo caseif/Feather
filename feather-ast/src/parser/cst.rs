@@ -1,19 +1,9 @@
 use feather_lrgen::gen_parse_tables;
 use featherparse::*;
-use indexmap::{IndexMap, IndexSet};
-use itertools::Itertools;
 use lazy_static::lazy_static;
-use serde::Serialize;
-use std::collections::{BTreeSet, HashMap, VecDeque};
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::collections::{HashMap, VecDeque};
 
 use crate::parser::ParseError;
-
-const MAGIC_EPSILON: &str = "Epsilon";
-const MAGIC_START_PROD: &str = "^";
-const MAGIC_PROGRAM_PROD: &str = "Program";
-const MAGIC_EOF_TOKEN: &str = "$";
 
 lazy_static! {
     static ref PARSE_TABLES: (HashMap<ActionTableKey, LRAction>, HashMap<GotoTableKey, usize>) = gen_parse_tables!();

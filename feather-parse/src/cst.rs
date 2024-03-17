@@ -9,10 +9,10 @@ use std::fmt::{Debug, Display, Formatter};
 
 use crate::tokenizer::{get_all_token_defs, Token};
 
-const MAGIC_EPSILON: &str = "Epsilon";
-const MAGIC_START_PROD: &str = "^";
-const MAGIC_PROGRAM_PROD: &str = "Program";
-const MAGIC_EOF_TOKEN: &str = "$";
+const SYMBOL_EPSILON: &str = "Epsilon";
+const SYMBOL_PROGRAM: &str = "Program";
+const SYMBOL_START: &str = "^";
+const TOKEN_EOF: &str = "$";
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Symbol {
@@ -41,105 +41,9 @@ pub enum CstNode {
     Expression(Expression),
 }
 
-type CstPath = Vec<usize>;
-
-impl Expression {
-    fn get_child(&self, path: &CstPath) -> Result<&CstNode, InvalidCstPathError> {
-        if path.is_empty() {
-            return Err(InvalidCstPathError {});
-        }
-
-        let cur_index = path[0];
-        if cur_index >= self.children.len() {
-            return Err(InvalidCstPathError {});
-        }
-
-        let child = &self.children[cur_index];
-        return if path.len() == 1 {
-            Ok(&child)
-        } else {
-            match child {
-                CstNode::Expression(expr) => expr.get_child(&path[1..].to_vec()),
-                CstNode::Token(_) => Err(InvalidCstPathError {}),
-            }
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize)]
 pub struct Cst {
     pub root: CstNode,
-}
-
-impl Cst {
-    fn add_child(&mut self, parent_path: &CstPath, node: CstNode) -> Result<CstPath, InvalidCstPathError> {
-        let mut subpath = parent_path.as_slice();
-        let mut cur_child = match &mut self.root {
-            CstNode::Expression(expr) => expr,
-            _ => panic!("Root node is not an expression"),
-        };
-        while !subpath.is_empty() {
-            let cur_index = subpath[0];
-
-            if cur_index >= cur_child.children.len() {
-                return Err(InvalidCstPathError {});
-            }
-
-            cur_child = match &mut cur_child.children[subpath[0]] {
-                CstNode::Token(_) => {
-                    return Err(InvalidCstPathError {});
-                }
-                CstNode::Expression(expr) => { expr }
-            };
-            subpath = &subpath[1..];
-        }
-
-        let (child_type, child_id) = match &node {
-            CstNode::Token(t) => { ("token", &t.type_id) }
-            CstNode::Expression(e) => { ("expr", &e.type_id) }
-        };
-
-        let mut child_path = parent_path.clone();
-        child_path.push(cur_child.children.len());
-
-        cur_child.children.push(node);
-
-        Ok(child_path)
-    }
-
-    fn remove_child(&mut self, path: &CstPath) -> Result<(), InvalidCstPathError> {
-        if path.is_empty() {
-            return Err(InvalidCstPathError {});
-        }
-
-        let mut subpath = path.as_slice();
-        let mut cur_child = match &mut self.root {
-            CstNode::Expression(expr) => expr,
-            _ => panic!("Root node is not an expression"),
-        };
-        while subpath.len() > 1 {
-            let cur_index = subpath[0];
-            if cur_index >= cur_child.children.len() {
-                return Err(InvalidCstPathError {});
-            }
-
-            cur_child = match &mut cur_child.children[subpath[0]] {
-                CstNode::Token(_) => {
-                    return Err(InvalidCstPathError {});
-                }
-                CstNode::Expression(expr) => expr,
-            };
-            subpath = &subpath[1..];
-        }
-
-        let leaf_index = subpath[0];
-        if cur_child.children.len() != leaf_index + 1 {
-            return Err(InvalidCstPathError {});
-        }
-
-        cur_child.children.pop();
-        Ok(())
-    }
 }
 
 #[derive(Debug)]
@@ -166,7 +70,7 @@ fn parse_bnf_production(name: &String, prod: &str) -> Result<Production, String>
     let mut prod_symbols = Vec::<Symbol>::new();
 
     for symbol_str in prod.trim().split(' ').map(|p| p.trim()) {
-        let symbol = if &symbol_str == &MAGIC_EPSILON {
+        let symbol = if &symbol_str == &SYMBOL_EPSILON {
             Symbol::Epsilon()
         } else if symbol_str.starts_with('(') && symbol_str.ends_with(')') {
             let symbol_id = &symbol_str[1..(symbol_str.len() - 1)];
@@ -308,7 +212,7 @@ fn compute_first_sets() -> HashMap<String, BTreeSet<String>> {
                             if prods.unwrap().iter().any(|prod| prod.symbols[0] == Symbol::Epsilon()) {
                                 if i == prod.symbols.len() - 1 {
                                     let cur_set = first_sets.get_mut(nt_name).expect("Failed to get first set");
-                                    cur_set.insert(MAGIC_EPSILON.to_string());
+                                    cur_set.insert(SYMBOL_EPSILON.to_string());
                                 }
 
                                 // go to the next symbol since the current one can be empty
@@ -320,7 +224,7 @@ fn compute_first_sets() -> HashMap<String, BTreeSet<String>> {
                         },
                         Symbol::Epsilon() => {
                             let cur_set = first_sets.get_mut(nt_name).expect("Failed to get first set");
-                            cur_set.insert(MAGIC_EPSILON.to_string());
+                            cur_set.insert(SYMBOL_EPSILON.to_string());
                         },
                     }
                 }
@@ -333,78 +237,6 @@ fn compute_first_sets() -> HashMap<String, BTreeSet<String>> {
     }
 
     return first_sets;
-}
-
-fn compute_follow_sets(first_sets: &HashMap<String, BTreeSet<String>>) -> HashMap<String, BTreeSet<String>> {
-    let mut follow_sets = HashMap::<String, BTreeSet<String>>::new();
-
-    follow_sets.insert(MAGIC_START_PROD.to_string(), std::iter::once(MAGIC_EOF_TOKEN.to_string()).collect());
-
-    loop {
-        let mut did_modify = false;
-
-        for prod in GRAMMAR.values().flatten()
-                .chain(std::iter::once(&Production {
-                    name: MAGIC_START_PROD.to_string(),
-                    symbols: vec![Symbol::Expression(MAGIC_PROGRAM_PROD.to_string())]
-                })) {
-            for i in 0..prod.symbols.len() {
-                match &prod.symbols[i] {
-                    Symbol::Expression(expr) => {
-                        _ = follow_sets.entry(expr.clone()).or_insert(BTreeSet::new());
-
-                        if i == prod.symbols.len() - 1 {
-                            if let Some(to_add) = follow_sets.get(&prod.name).cloned() {
-                                if follow_sets[expr].intersection(&to_add).count() < to_add.len() {
-                                    follow_sets.get_mut(expr).expect("Failed to get follow set").extend(to_add);
-                                    did_modify = true;
-                                }
-                            }
-                        } else {
-                            match &prod.symbols[i + 1] {
-                                Symbol::Token(token) => {
-                                    did_modify |= follow_sets.get_mut(expr).expect("Failed to get follow set")
-                                            .insert(token.clone());
-                                },
-                                Symbol::Expression(next_expr) => {
-                                    _ = follow_sets.entry(expr.clone()).or_insert(BTreeSet::new());
-
-                                    if let Some(mut to_add) = first_sets.get(next_expr).cloned() {
-                                        to_add.remove(MAGIC_EPSILON);
-                                        if follow_sets[expr].intersection(&to_add).count() < to_add.len() {
-                                            follow_sets.get_mut(expr).expect("Failed to get follow set")
-                                                    .extend(to_add);
-                                            did_modify = true;
-                                        }
-                                    }
-
-                                    if prod.symbols.len() > 1 && i == prod.symbols.len() - 2
-                                            && first_sets.get(next_expr)
-                                            .map(|fs| fs.contains(MAGIC_EPSILON)).unwrap_or(false) {
-                                        if let Some(to_add) = follow_sets.get(&prod.name).cloned() {
-                                            if follow_sets[expr].intersection(&to_add).count() < to_add.len() {
-                                                follow_sets.get_mut(expr).expect("Failed to get follow set")
-                                                        .extend(to_add);
-                                                did_modify = true;
-                                            }
-                                        }
-                                    }
-                                },
-                                Symbol::Epsilon() => {},
-                            }
-                        }
-                    },
-                    _ => (),
-                }
-            }
-        }
-
-        if !did_modify {
-            break;
-        }
-    }
-
-    return follow_sets;
 }
 
 #[allow(unused)]
@@ -428,11 +260,11 @@ fn compute_lookahead_tokens(prod: &Production, pos: usize, cur_lookahead: &Strin
                 Symbol::Expression(expr) => {
                     let mut la = first_sets.get(expr).cloned()
                             .unwrap_or(BTreeSet::<String>::new());
-                    let has_epsilon = la.contains(MAGIC_EPSILON);
+                    let has_epsilon = la.contains(SYMBOL_EPSILON);
                     if has_epsilon {
                         //la.extend(follow_sets[expr].iter().cloned());
                         //la.insert(item.lookahead.clone());
-                        la.remove(MAGIC_EPSILON);
+                        la.remove(SYMBOL_EPSILON);
                     }
 
                     cur_lookaheads.append(&mut la);
@@ -455,7 +287,7 @@ fn compute_lookahead_tokens(prod: &Production, pos: usize, cur_lookahead: &Strin
     }
 
     if can_be_empty {
-        cur_lookaheads.insert(MAGIC_EPSILON.to_string());
+        cur_lookaheads.insert(SYMBOL_EPSILON.to_string());
     }
 
     if is_at_end || can_be_empty {
@@ -525,12 +357,11 @@ fn print_goto_table(table: &HashMap<GotoTableKey, usize>, config_sets: &Vec<BTre
 
 pub fn build_parsing_tables() -> (HashMap<ActionTableKey, LRAction>, HashMap<GotoTableKey, usize>) {
     let prods: IndexSet<Production> = std::iter::once(Production {
-        name: MAGIC_START_PROD.to_string(),
-        symbols: vec![Symbol::Expression(MAGIC_PROGRAM_PROD.to_string())]
+        name: SYMBOL_START.to_string(),
+        symbols: vec![Symbol::Expression(SYMBOL_PROGRAM.to_string())]
     }).chain(GRAMMAR.values().flatten().cloned()).collect();
 
     let first_sets = compute_first_sets();
-    let follow_sets = compute_follow_sets(&first_sets);
 
     let mut config_sets = Vec::<BTreeSet<LR1Item>>::new();
 
@@ -544,7 +375,7 @@ pub fn build_parsing_tables() -> (HashMap<ActionTableKey, LRAction>, HashMap<Got
     let mut kernels: Vec<(Vec<LR1Item>, Option<usize>, Option<Symbol>)> = vec![(vec![LR1Item {
         prod: prods.first().expect("Failed to get start symbol").clone(),
         pos: 0,
-        lookahead: "$".to_string(),
+        lookahead: TOKEN_EOF.to_string(),
     }], None, None)];
     let mut seen_kernels: HashMap<Vec<LR1Item>, usize> = HashMap::new();
 
@@ -592,7 +423,7 @@ pub fn build_parsing_tables() -> (HashMap<ActionTableKey, LRAction>, HashMap<Got
                         panic!("Encountered unknown grammar symbol {} in production for {}", expr, item.prod.name);
                     }
                     for prod in prods.unwrap() {
-                        item_stack.extend(cur_lookaheads.iter().filter(|la| *la != MAGIC_EPSILON).map(|la| LR1Item {
+                        item_stack.extend(cur_lookaheads.iter().filter(|la| *la != SYMBOL_EPSILON).map(|la| LR1Item {
                             prod: prod.clone(),
                             pos: 0,
                             lookahead: la.clone(),
@@ -663,11 +494,9 @@ pub fn build_parsing_tables() -> (HashMap<ActionTableKey, LRAction>, HashMap<Got
             if item.pos == item.prod.symbols.len() {
                 let key = ActionTableKey { state, token: item.lookahead.clone() };
 
-                if item.prod.name == "^" && item.lookahead == "$" {
+                if item.prod.name == SYMBOL_START && item.lookahead == TOKEN_EOF {
                     action_table.insert(key, LRAction::Accept());
                 } else {
-                    let prod_index = prods.get_index_of(&item.prod)
-                            .expect("Failed to get index for production");
                     if let Some(existing) = action_table.get(&key) {
                         match existing {
                             LRAction::Reduce(existing_prod) => {
