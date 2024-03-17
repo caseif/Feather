@@ -11,9 +11,7 @@ UintType        := (TypeUint8)
                  | (TypeUint32)
                  | (TypeUint64)
 
-FloatType       := (TypeFloat8)
-                 | (TypeFloat16)
-                 | (TypeFloat32)
+FloatType       := (TypeFloat32)
                  | (TypeFloat64)
 
 BuiltInType     := IntType
@@ -23,10 +21,14 @@ BuiltInType     := IntType
                  | (TypeChar)
                  | (TypeString)
 
+ComplexType     := (Identifier)
+
 ArrayModNaught  := Expression
                  | Epsilon
 
 ArrayModifier   := (OpenBracket) ArrayModNaught (CloseBracket)
+
+ArrayType       := Type ArrayModifier
 
 TupleTypes      := Type (Comma) TupleTypes
                  | Type
@@ -34,19 +36,16 @@ TupleTypes      := Type (Comma) TupleTypes
 TupleType       := (OpenParen) TupleTypes (CloseParen)
 
 Type            := BuiltInType
-                 | (Identifier)
-                 | Type ArrayModifier
+                 | ComplexType
+                 | ArrayType
                  | TupleType
-
-BooleanLiteral  := (TrueLiteral)
-                 | (FalseLiteral)
 
 Literal         := (StringLiteral)
                  | (IntegerLiteral)
                  | (HexLiteral)
                  | (DecimalLiteral)
+                 | (BooleanLiteral)
                  | (Nil)
-                 | BooleanLiteral
 
 Parenthetical   := (OpenParen) OptNewline Expression OptNewline (CloseParen)
 
@@ -58,50 +57,11 @@ TupleElsPrime   := Expression (Comma) TupleElsPrime
 
 Tuple           := (OpenParen) TupleElements (CloseParen)
 
-IndexAccess     := (OpenBracket) Expression (CloseBracket)
-
-SliceBound      := Primary
-                 | Epsilon
-
-RangeDelimiter  := (Range)
-                 | (RangeInclusive)
-
-SliceAccess     := (OpenBracket) SliceBound RangeDelimiter SliceBound (CloseBracket)
-
 InitListEntries := Expression (Comma) OptNewline InitListEntries
                  | Expression
                  | Epsilon
 
 InitList        := (OpenBrace) InitListEntries (CloseBrace)
-
-OpNumUnary      := (Hyphen)
-
-OpBoolUnary     := (Not)
-
-OpNumMult       := (Asterisk)
-                 | (ForwardSlash)
-
-OpNumAdd        := (Plus)
-                 | (Hyphen)
-                 | (Percent)
-
-OpBoolRel       := (LessThan)
-                 | (LessEqual)
-                 | (GreaterThan)
-                 | (GreaterEqual)
-
-OpBoolEq        := (Equals)
-                 | (NotEquals)
-
-OpBoolAnd       := (And)
-
-OpBoolOr        := (Or)
-
-AddSubOperator  := (Plus)
-                 | (Hyphen)
-
-MulDivOperator  := (Asterisk)
-                 | (ForwardSlash)
 
 TypeAnnotation  := (Colon) Type
 
@@ -116,11 +76,26 @@ Lval            := VarDecl
 
 StaticAccess    := Primary (StaticAccessor) OptNewline (Identifier)
 
-InstanceAccess  := Primary (InstanceAccessor) OptNewline (Identifier)
+InstancedAccess  := Primary (InstanceAccessor) OptNewline (Identifier)
+
+IndexSelector   := (OpenBracket) Expression (CloseBracket)
+
+IndexedAccess   := Primary IndexSelector
+
+SliceBound      := Primary
+                 | Epsilon
+
+RangeDelimiter  := (Range)
+                 | (RangeInclusive)
+
+SliceSelector   := (OpenBracket) SliceBound RangeDelimiter SliceBound (CloseBracket)
+
+SlicedAccess    := Primary SliceSelector
 
 Invokable       := (Identifier)
                  | StaticAccess
-                 | InstanceAccess
+                 | InstancedAccess
+                 | IndexedAccess
                  | FnInvocation
                  | Parenthetical
 
@@ -132,19 +107,40 @@ FnParamListPrime    := (Comma) OptNewline Expression FnParamListPrime
 
 FnInvocation    := Invokable (OpenParen) OptNewline FnParamList OptNewline (CloseParen)
 
+OpUnary      := (Hyphen)
+              | (Not)
+
+OpNumMult       := (Asterisk)
+                 | (ForwardSlash)
+
+OpNumAdd        := (Plus)
+                 | (Hyphen)
+                 | (Percent)
+
+CmpBoolRel      := (LessThan)
+                 | (LessEqual)
+                 | (GreaterThan)
+                 | (GreaterEqual)
+
+CmpBoolEq       := (Equals)
+                 | (NotEquals)
+
+OpBoolAnd       := (And)
+
+OpBoolOr        := (Or)
+
 Primary         := (Identifier)
                  | StaticAccess
-                 | InstanceAccess
+                 | InstancedAccess
                  | Literal
                  | Parenthetical
                  | FnInvocation
-                 | Primary IndexAccess
-                 | Primary SliceAccess
+                 | IndexedAccess
+                 | SlicedAccess
                  | Tuple
                  | InitList
 
-ExprOpUnary     := OpNumUnary ExprOpUnary
-                 | OpBoolUnary ExprOpUnary
+ExprOpUnary     := OpUnary ExprOpUnary
                  | Primary
 
 ExprOpNumMult   := ExprOpUnary OpNumMult OptNewline ExprOpNumMult
@@ -153,14 +149,14 @@ ExprOpNumMult   := ExprOpUnary OpNumMult OptNewline ExprOpNumMult
 ExprOpNumAdd    := ExprOpNumMult OpNumAdd OptNewline ExprOpNumAdd
                  | ExprOpNumMult
 
-ExprOpBoolRel   := ExprOpNumAdd OpBoolRel OptNewline ExprOpBoolRel
+ExprCmpBoolRel  := ExprOpNumAdd CmpBoolRel OptNewline ExprCmpBoolRel
                  | ExprOpNumAdd
 
-ExprOpBoolEq    := ExprOpBoolRel OpBoolEq OptNewline ExprOpBoolEq
-                 | ExprOpBoolRel
+ExprCmpBoolEq   := ExprCmpBoolRel CmpBoolEq OptNewline ExprCmpBoolEq
+                 | ExprCmpBoolRel
 
-ExprOpBoolAnd   := ExprOpBoolEq OpBoolAnd OptNewline ExprOpBoolAnd
-                 | ExprOpBoolEq
+ExprOpBoolAnd   := ExprCmpBoolEq OpBoolAnd OptNewline ExprOpBoolAnd
+                 | ExprCmpBoolEq
 
 ExprOpBoolOr    := ExprOpBoolOr OpBoolOr OptNewline ExprOpBoolOr
                  | ExprOpBoolAnd

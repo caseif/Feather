@@ -21,12 +21,8 @@
       "regex": "(0x[0-9A-Fa-f]+)"
     },
     {
-      "id": "TrueLiteral",
-      "regex": "true"
-    },
-    {
-      "id": "FalseLiteral",
-      "regex": "false"
+      "id": "BooleanLiteral",
+      "regex": "(true|false)"
     },
     {
       "id": "Import",
@@ -254,20 +250,12 @@
       "regex": "u64"
     },
     {
-      "id": "TypeFloat8",
-      "regex": "i8"
-    },
-    {
-      "id": "TypeFloat16",
-      "regex": "i16"
-    },
-    {
       "id": "TypeFloat32",
-      "regex": "i32"
+      "regex": "f32"
     },
     {
       "id": "TypeFloat64",
-      "regex": "i64"
+      "regex": "f64"
     },
     {
       "id": "TypeBool",
