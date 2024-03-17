@@ -227,7 +227,7 @@
     },
     {
       "id": "TypeInt32",
-      "regex": "i32"
+      "regex": "i32|int"
     },
     {
       "id": "TypeInt64",
@@ -251,11 +251,11 @@
     },
     {
       "id": "TypeFloat32",
-      "regex": "f32"
+      "regex": "f32|float"
     },
     {
       "id": "TypeFloat64",
-      "regex": "f64"
+      "regex": "f64|double"
     },
     {
       "id": "TypeBool",
