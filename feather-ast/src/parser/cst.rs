@@ -1,60 +1,22 @@
+use feather_lrgen::gen_parse_tables;
+use featherparse::*;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use serde::Serialize;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
 use crate::parser::ParseError;
-use featherparse::*;
-use lazy_static::lazy_static;
 
 const MAGIC_EPSILON: &str = "Epsilon";
 const MAGIC_START_PROD: &str = "^";
 const MAGIC_PROGRAM_PROD: &str = "Program";
 const MAGIC_EOF_TOKEN: &str = "$";
 
-const ACTION_TABLE_JSON: &str = include_str!(concat!(env!("OUT_DIR"), "/action_table.json"));
-const GOTO_TABLE_JSON: &str = include_str!(concat!(env!("OUT_DIR"), "/goto_table.json"));
-
 lazy_static! {
-    static ref ACTION_TABLE: HashMap<ActionTableKey, LRAction> = load_action_table();
-    static ref GOTO_TABLE: HashMap<GotoTableKey, usize> = load_goto_table();
-}
-
-fn load_action_table() -> HashMap<ActionTableKey, LRAction> {
-    let mut table: HashMap<ActionTableKey, LRAction> = HashMap::new();
-
-    let map = serde_json::from_str::<HashMap<String, Vec<SerializableActionEntry>>>(ACTION_TABLE_JSON)
-            .expect("Failed to deserialize action table JSON");
-    for (token, entries) in map {
-        for entry in entries {
-            let action = if let Some(new_state) = entry.shift_state {
-                LRAction::Shift(new_state)
-            } else if let Some(prod) = entry.reduce_prod {
-                LRAction::Reduce(prod)
-            } else {
-                LRAction::Accept()
-            };
-            table.insert(ActionTableKey { state: entry.state, token: token.clone() }, action);
-        }
-    }
-
-    return table;
-}
-
-fn load_goto_table() -> HashMap<GotoTableKey, usize> {
-    let mut table: HashMap<GotoTableKey, usize> = HashMap::new();
-
-    let map = serde_json::from_str::<HashMap<String, Vec<SerializableGotoEntry>>>(GOTO_TABLE_JSON)
-            .expect("Failed to deserialize action table JSON");
-    for (symbol, entries) in map {
-        for entry in entries {
-            table.insert(GotoTableKey { state: entry.cur_state, symbol: symbol.clone() }, entry.goto_state);
-        }
-    }
-
-    return table;
+    static ref PARSE_TABLES: (HashMap<ActionTableKey, LRAction>, HashMap<GotoTableKey, usize>) = gen_parse_tables!();
 }
 
 pub fn generate_cst(tokens: TokenList) -> Result<Cst, ParseError> {
@@ -66,12 +28,12 @@ pub fn generate_cst(tokens: TokenList) -> Result<Cst, ParseError> {
         let token = &tokens.tokens[i];
 
         let key = ActionTableKey { state, token: token.type_id.clone() };
-        if !ACTION_TABLE.contains_key(&key) {
+        if !PARSE_TABLES.0.contains_key(&key) {
             //println!("Failed in state {} on token {}", state, token.type_id);
             return Err(ParseError { next_token: token.clone() });
         }
 
-        match &ACTION_TABLE[&key] {
+        match &PARSE_TABLES.0[&key] {
             LRAction::Shift(next_state) => {
                 stack.push((state, CstNode::Token(token.clone())));
                 state = *next_state;
@@ -108,7 +70,7 @@ pub fn generate_cst(tokens: TokenList) -> Result<Cst, ParseError> {
                 let (new_state, _) = popped_states[0];
                 stack.push((new_state, new_node));
 
-                let goto_state = GOTO_TABLE[&GotoTableKey { state: new_state, symbol: prod.name.clone() }];
+                let goto_state = PARSE_TABLES.1[&GotoTableKey { state: new_state, symbol: prod.name.clone() }];
                 state = goto_state;
             },
             LRAction::Accept() => {

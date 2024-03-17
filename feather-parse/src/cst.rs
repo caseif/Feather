@@ -3,11 +3,11 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
-use crate::tokenizer::{get_all_token_defs, Token, TokenList};
+use crate::tokenizer::{get_all_token_defs, Token};
 
 const MAGIC_EPSILON: &str = "Epsilon";
 const MAGIC_START_PROD: &str = "^";

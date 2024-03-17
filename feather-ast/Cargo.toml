@@ -3,7 +3,6 @@ name = "feather-ast"
 version = "0.0.1"
 edition = "2021"
 license = "LGPL-3.0-only"
-build = "src/build.rs"
 
 [lib]
 name = "featherast"
@@ -11,6 +10,7 @@ crate-type = ["rlib"]
 build = "src/build.rs"
 
 [dependencies]
+feather-lrgen = { path = "../feather-lrgen" }
 feather-parse = { path = "../feather-parse" }
 indexmap = "2.2"
 itertools = "0.12"
