@@ -7,8 +7,7 @@ use structopt::StructOpt;
 
 use featherast::parser::cst::generate_cst;
 use featherast::parser::generate_ast;
-use featherast::tokenizer;
-use featherast::tokenizer::TokenList;
+use featherparse::{tokenize, TokenList};
 
 #[derive(Debug, PartialEq, StructOpt)]
 struct TokenizeArgs {
@@ -75,7 +74,7 @@ fn read_file_to_string(path: PathBuf) -> String {
 }
 
 fn tokenize_input(input: &String) -> TokenList {
-    match tokenizer::tokenize(&input) {
+    match tokenize(&input) {
         Ok(t) => t,
         Err(e) => {
             let caret_line = format!("{: >1$}", "^", e.col);
@@ -107,8 +106,6 @@ fn do_tokenize(args: TokenizeArgs) {
     let tokens = tokenize_input(&input_str);
 
     let out_file = open_out_file(&args.output_file);
-
-    println!("{:?}", tokens.tokens);
 
     if let Err(e) = serde_json::to_writer_pretty(out_file, &tokens) {
         eprintln!("Failed to write to output file: {e}");

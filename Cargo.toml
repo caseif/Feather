@@ -3,4 +3,5 @@ resolver = "2"
 members = [
   "feather-ast",
   "feather-cli",
+  "feather-parse",
 ]

@@ -1,4 +1,4 @@
-use crate::tokenizer::Token;
+use featherparse::Token;
 
 pub mod ast;
 pub mod cst;

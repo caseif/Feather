@@ -1,9 +1,9 @@
-use std::collections::{HashMap, VecDeque};
+use featherparse::{Cst, CstNode, TokenList};
 use serde::Serialize;
+use std::collections::{HashMap, VecDeque};
 
 use crate::parser::ParseError;
-use crate::parser::cst::{Cst, CstNode, generate_cst};
-use crate::tokenizer::TokenList;
+use crate::parser::cst::generate_cst;
 
 #[derive(Debug, Serialize)]
 pub enum AstNodeType {
