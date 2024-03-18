@@ -231,7 +231,9 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                             return vec![AstNode {
                                 node_type: new_name.to_string(),
                                 val: None,
-                                children: children.into_iter().take(*child_index).skip(1).collect() }];
+                                children: [&children[0..*child_index], &children[(*child_index + 1)..]]
+                                        .concat().clone(),
+                            }];
                         }
                     }
                 }
