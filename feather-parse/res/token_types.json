@@ -9,6 +9,58 @@
       "regex": "\\n"
     },
     {
+      "id": "TypeInt8",
+      "regex": "i8"
+    },
+    {
+      "id": "TypeInt16",
+      "regex": "i16"
+    },
+    {
+      "id": "TypeInt32",
+      "regex": "(?:i32|int)"
+    },
+    {
+      "id": "TypeInt64",
+      "regex": "i64"
+    },
+    {
+      "id": "TypeUint8",
+      "regex": "u8"
+    },
+    {
+      "id": "TypeUint16",
+      "regex": "u16"
+    },
+    {
+      "id": "TypeUint32",
+      "regex": "u32"
+    },
+    {
+      "id": "TypeUint64",
+      "regex": "u64"
+    },
+    {
+      "id": "TypeFloat32",
+      "regex": "(?:f32|float)"
+    },
+    {
+      "id": "TypeFloat64",
+      "regex": "(?:f64|double)"
+    },
+    {
+      "id": "TypeBool",
+      "regex": "bool"
+    },
+    {
+      "id": "TypeChar",
+      "regex": "char"
+    },
+    {
+      "id": "TypeString",
+      "regex": "string"
+    },
+    {
       "id": "DecimalLiteral",
       "regex": "(\\d+\\.\\d+)"
     },
@@ -212,62 +264,9 @@
       "id": "ForwardSlash",
       "regex": "/"
     },
-
     {
       "id": "Percent",
-      "regex": "/"
-    },
-    {
-      "id": "TypeInt8",
-      "regex": "i8"
-    },
-    {
-      "id": "TypeInt16",
-      "regex": "i16"
-    },
-    {
-      "id": "TypeInt32",
-      "regex": "i32|int"
-    },
-    {
-      "id": "TypeInt64",
-      "regex": "i64"
-    },
-    {
-      "id": "TypeUint8",
-      "regex": "u8"
-    },
-    {
-      "id": "TypeUint16",
-      "regex": "u16"
-    },
-    {
-      "id": "TypeUint32",
-      "regex": "u32"
-    },
-    {
-      "id": "TypeUint64",
-      "regex": "u64"
-    },
-    {
-      "id": "TypeFloat32",
-      "regex": "f32|float"
-    },
-    {
-      "id": "TypeFloat64",
-      "regex": "f64|double"
-    },
-    {
-      "id": "TypeBool",
-      "regex": "bool"
-    },
-    {
-      "id": "TypeChar",
-      "regex": "char"
-    },
-    {
-      "id": "TypeString",
-      "regex": "string"
+      "regex": "%"
     },
     {
       "id": "Identifier",
