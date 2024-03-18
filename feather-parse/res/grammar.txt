@@ -76,19 +76,32 @@ Lval            := VarDecl
 
 StaticAccess    := Primary (StaticAccessor) OptNewline (Identifier)
 
-InstancedAccess  := Primary (InstanceAccessor) OptNewline (Identifier)
+InstancedAccess := Primary (InstanceAccessor) OptNewline (Identifier)
 
 IndexSelector   := (OpenBracket) Expression (CloseBracket)
 
 IndexedAccess   := Primary IndexSelector
 
-SliceBound      := Primary
+RangeBound      := Primary
+
+RangeExclusive  := RangeBound (RangeExclDelimiter) RangeBound
+
+RangeInclusive  := RangeBound (RangeInclDelimiter) RangeBound
+
+Range           := RangeExclusive
+                 | RangeInclusive
+
+SliceBound      := ExprOpNumAdd
                  | Epsilon
 
-RangeDelimiter  := (Range)
-                 | (RangeInclusive)
+SliceExclusive  := SliceBound (RangeExclDelimiter) SliceBound
 
-SliceSelector   := (OpenBracket) SliceBound RangeDelimiter SliceBound (CloseBracket)
+SliceInclusive  := SliceBound (RangeInclDelimiter) SliceBound
+
+Slice           := SliceExclusive
+                 | SliceInclusive
+
+SliceSelector   := (OpenBracket) Slice (CloseBracket)
 
 SlicedAccess    := Primary SliceSelector
 
@@ -178,6 +191,10 @@ IfChain         := IfStatement IfChainPrime
 IfChainPrime    := ElseIfStatement IfChainPrime
                  | ElseStatement
                  | Epsilon
+
+ForLoop         := (For) (Identifier) (In) Primary
+
+WhileLoop       := (While) OptNewline Block
 
 ImportStatement := (Import) (Identifier)
 

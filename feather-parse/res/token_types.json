@@ -133,12 +133,12 @@
       "regex": "nil"
     },
     {
-      "id": "Range",
-      "regex": "\\.\\."
+      "id": "RangeInclDelimiter",
+      "regex": "\\.\\.="
     },
     {
-      "id": "RangeInclusive",
-      "regex": "\\.\\.="
+      "id": "RangeExclDelimiter",
+      "regex": "\\.\\."
     },
     {
       "id": "OpenParen",
