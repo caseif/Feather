@@ -26,9 +26,9 @@ ComplexType     := (Identifier)
 ArrayModNaught  := Expression
                  | Epsilon
 
-ArrayModifier   := (OpenBracket) ArrayModNaught (CloseBracket)
+ArraySelector   := (OpenBracket) ArrayModNaught (CloseBracket)
 
-ArrayType       := Type ArrayModifier
+ArrayType       := Type ArraySelector
 
 TupleTypes      := Type (Comma) TupleTypes
                  | Type
@@ -192,9 +192,16 @@ IfChainPrime    := ElseIfStatement IfChainPrime
                  | ElseStatement
                  | Epsilon
 
-ForLoop         := (For) (Identifier) (In) Primary
+WhileLoop       := (While) Expression OptNewline Block
 
-WhileLoop       := (While) OptNewline Block
+ForParam        := Primary
+                 | Range
+
+ForLoop         := (For) (Identifier) (In) ForParam OptNewline Block
+
+ContinueStatement   := (Continue)
+
+BreakStatement  := (Break)
 
 ImportStatement := (Import) (Identifier)
 
@@ -206,10 +213,10 @@ FnPmDefsPrime   := (Comma) OptNewline (Identifier) TypeAnnotation FnPmDefsPrime
                  | (Comma) OptNewline (Identifier) FnPmDefsPrime
                  | Epsilon
 
-FnReturnType    := (RightArrow) Type
+ReturnType      := (RightArrow) Type
                  | Epsilon
 
-FunctionSig     := (FunctionDefKeyword) (Identifier) (OpenParen) OptNewline FnParamDefs OptNewline (CloseParen) OptNewline FnReturnType
+FunctionSig     := (FunctionDefKeyword) (Identifier) (OpenParen) OptNewline FnParamDefs OptNewline (CloseParen) OptNewline ReturnType
 
 FunctionDef     := FunctionSig OptNewline Block
 
@@ -251,6 +258,10 @@ StatementNaught := FunctionDef
                  | VarDecl
                  | ConstDecl
                  | IfChain
+                 | WhileLoop
+                 | ForLoop
+                 | ContinueStatement
+                 | BreakStatement
                  | Block
                  | Annotation StatementEnd Annotatable
 
