@@ -113,6 +113,10 @@
       "regex": "for"
     },
     {
+      "id": "In",
+      "regex": "\\bin\\b"
+    },
+    {
       "id": "While",
       "regex": "while"
     },
