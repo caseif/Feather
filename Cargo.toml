@@ -6,3 +6,8 @@ members = [
   "feather-lrgen",
   "feather-parse",
 ]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "LGPL-3.0-only"
