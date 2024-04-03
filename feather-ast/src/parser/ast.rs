@@ -7,6 +7,9 @@ use crate::parser::ParseError;
 use crate::parser::cst::generate_cst;
 
 pub enum AstNodeType {
+    // used for operator tokens
+    Unknown,
+    // symbols directly from tokens
     TypeInt8,
     TypeInt16,
     TypeInt32,
@@ -24,6 +27,7 @@ pub enum AstNodeType {
     LiteralHex,
     LiteralDecimal,
     LiteralBoolean,
+    // symbols from the formal grammar
     Tuple,
     InitList,
     TypeAnnotation,
@@ -60,6 +64,7 @@ pub enum AstNodeType {
     ReturnStatement,
     Annotation,
     Program,
+    // virtual symbols not present in the CST
     OpNot,
     OpNegate,
     OpMultiply,
@@ -150,7 +155,6 @@ lazy_static! {
         ("ExprOpBoolAnd", UniversalRule::PullUpOperator),
         ("ExprOpBoolOr", UniversalRule::PullUpOperator),
         ("OptNewline", UniversalRule::Prune),
-        ("RangeDelimiter", UniversalRule::Prune),
         ("StatementEnd", UniversalRule::Prune),
     ]);
 
@@ -189,6 +193,9 @@ lazy_static! {
         ]))),
     ]);
 
+    // Tokens to explicitly preserve while processing the AST. All other nodes
+    // will be implicitly pruned, unless they contain a value in which case they
+    // will be preserved.
     static ref PRESERVE_TOKENS: Vec<&'static str> = Vec::from([
         "TypeInt8",
         "TypeInt16",
@@ -211,6 +218,13 @@ lazy_static! {
         "LiteralDecimal",
         "LiteralBoolean",
         "Nil",
+    ]);
+
+    // Operator tokens which are used only in resolving their parent
+    // expressions. They will not be pruned, but their type ID will be moved to
+    // the value field and they will be given a generic "Operator" type ID.
+    // They will be pruned while processing their respective parent nodes.
+    static ref OPERATOR_TOKENS: Vec<&'static str> = Vec::from([
         "Not",
         "Plus",
         "Hyphen",
@@ -231,9 +245,6 @@ lazy_static! {
 type TreePath = Vec<usize>;
 
 fn flatten_cst<'a>(cst: &'a Cst) -> Vec<(&'a CstNode, TreePath)> {
-    /*let mut flat_cst: Vec<(&'a CstNode, TreePath)> = cst.root.children.iter().enumerate()
-            .map(|(i, child)| (child, vec![i]))
-            .collect();*/
     let mut flat_cst: Vec<(&'a CstNode, TreePath)> = vec![(&cst.root, vec![])];
 
     let mut traversal_stack: VecDeque<usize> = VecDeque::from([0]);
@@ -292,7 +303,7 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                             if *child_index >= children.len() {
                                 panic!("Operator expression does not have enough children");
                             }
-                            let op_token = &children[*child_index].node_type;
+                            let op_token = children[*child_index].val.as_ref().unwrap();
                             let new_name = mappings.get(op_token.as_str())
                                     .expect("Operator token should have corresponding name mapping");
                             return vec![AstNode {
@@ -317,7 +328,13 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                 return vec![AstNode {
                     node_type: token.type_id.clone(),
                     val: token.value.clone(),
-                    children: vec![]
+                    children: vec![],
+                }];
+            } else if OPERATOR_TOKENS.contains(&token.type_id.as_str()) {
+                return vec![AstNode {
+                    node_type: "Unknown".to_string(),
+                    val: Some(token.type_id.clone()),
+                    children: vec![],
                 }];
             } else {
                 return vec![];
