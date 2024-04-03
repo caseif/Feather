@@ -1,11 +1,14 @@
 use featherparse::{Cst, CstNode, TokenList};
+use lazy_static::lazy_static;
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
-use lazy_static::lazy_static;
+use std::str::FromStr;
+use strum_macros::EnumString;
 
 use crate::parser::ParseError;
 use crate::parser::cst::generate_cst;
 
+#[derive(Clone, Debug, Hash, PartialEq, Serialize, EnumString)]
 pub enum AstNodeType {
     // used for operator tokens
     Unknown,
@@ -27,6 +30,8 @@ pub enum AstNodeType {
     LiteralHex,
     LiteralDecimal,
     LiteralBoolean,
+    Nil,
+    Identifier,
     // symbols from the formal grammar
     Tuple,
     InitList,
@@ -49,11 +54,13 @@ pub enum AstNodeType {
     IfBlock,
     ElseIfBlock,
     ElseBlock,
+    IfChain,
     WhileLoop,
     ForLoop,
     ContinueStatement,
     BreakStatement,
     ImportStatement,
+    FnParamDefs,
     ReturnType,
     FunctionSig,
     FunctionDef,
@@ -84,7 +91,7 @@ pub enum AstNodeType {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct AstNode {
-    node_type: String,
+    node_type: AstNodeType,
     val: Option<String>,
     children: Vec<AstNode>,
 }
@@ -134,6 +141,7 @@ lazy_static! {
         ("FnPmDefsPrime", UniversalRule::Flatten),
         ("ClassFldsPrime", UniversalRule::Flatten),
         ("ClassFnsPrime", UniversalRule::Flatten),
+        ("AnnotationBody", UniversalRule::Flatten),
         ("Annotatable", UniversalRule::Flatten),
         ("StatementNaught", UniversalRule::Flatten),
         ("StatementList", UniversalRule::Flatten),
@@ -161,35 +169,35 @@ lazy_static! {
     // Rules for operator expressions specifically. The value is the index of
     // the child to operate on alongside mappings from original child names to
     // new parent names.
-    static ref OPERATOR_RULES: HashMap<&'static str, (usize, HashMap<&'static str, &'static str>)> = HashMap::from([
+    static ref OPERATOR_RULES: HashMap<&'static str, (usize, HashMap<&'static str, AstNodeType>)> = HashMap::from([
         ("ExprOpUnary", (0, HashMap::from([
-            ("Not", "OpNot"), // invert boolean value
-            ("Hyphen", "OpNegate"), // negate numeric value
+            ("Not", AstNodeType::OpNot), // invert boolean value
+            ("Hyphen", AstNodeType::OpNegate), // negate numeric value
         ]))),
         ("ExprOpNumMult", (1, HashMap::from([
-            ("Asterisk", "OpMultiply"),
-            ("ForwardSlash", "OpDivide"),
+            ("Asterisk", AstNodeType::OpMultiply),
+            ("ForwardSlash", AstNodeType::OpDivide),
         ]))),
         ("ExprOpNumAdd", (1, HashMap::from([
-            ("Plus", "OpAdd"),
-            ("Hyphen", "OpSubtract"),
-            ("Percent", "OpModulo"),
+            ("Plus", AstNodeType::OpAdd),
+            ("Hyphen", AstNodeType::OpSubtract),
+            ("Percent", AstNodeType::OpModulo),
         ]))),
         ("ExprCmpBoolRel", (1, HashMap::from([
-            ("LessThan", "CmpLess"),
-            ("LessEqual", "CmpLessEq"),
-            ("GreaterThan", "CmpGreater"),
-            ("GreaterEqual", "CmpGreaterEq"),
+            ("LessThan", AstNodeType::CmpLess),
+            ("LessEqual", AstNodeType::CmpLessEq),
+            ("GreaterThan", AstNodeType::CmpGreater),
+            ("GreaterEqual", AstNodeType::CmpGreaterEq),
         ]))),
         ("ExprCmpBoolEq", (1, HashMap::from([
-            ("Equals", "CmpEquals"),
-            ("NotEquals", "CmpNotEquals"),
+            ("Equals", AstNodeType::CmpEquals),
+            ("NotEquals", AstNodeType::CmpNotEquals),
         ]))),
         ("ExprOpBoolAnd", (1, HashMap::from([
-            ("And", "OpAnd"),
+            ("And", AstNodeType::OpAnd),
         ]))),
         ("ExprOpBoolOr", (1, HashMap::from([
-            ("Or", "OpOr"),
+            ("Or", AstNodeType::OpOr),
         ]))),
     ]);
 
@@ -289,7 +297,8 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                         }
 
                         return vec![AstNode {
-                            node_type: expr.type_id.clone(),
+                            node_type: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
+                                "Expression type string '{}' should have corresponding enum variant", expr.type_id)),
                             val: children[0].val.clone(),
                             children: vec![]
                         }];
@@ -299,15 +308,17 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                             return children;
                         } else {
                             let (child_index, mappings) = OPERATOR_RULES.get(expr.type_id.as_str())
-                                    .expect("Operator expression should have corresponding operator rule");
+                                    .unwrap_or_else(|| panic!(
+                                        "Operator expression '{}' should have corresponding operator rule",
+                                        expr.type_id));
                             if *child_index >= children.len() {
-                                panic!("Operator expression does not have enough children");
+                                panic!("Operator expression '{}' does not have enough children", expr.type_id);
                             }
                             let op_token = children[*child_index].val.as_ref().unwrap();
-                            let new_name = mappings.get(op_token.as_str())
-                                    .expect("Operator token should have corresponding name mapping");
+                            let mapped_type = mappings.get(op_token.as_str()).unwrap_or_else(|| panic!(
+                                "Operator token '{}' should have corresponding name mapping", op_token));
                             return vec![AstNode {
-                                node_type: new_name.to_string(),
+                                node_type: mapped_type.clone(),
                                 val: None,
                                 children: [&children[0..*child_index], &children[(*child_index + 1)..]]
                                         .concat().clone(),
@@ -318,21 +329,23 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
             }
 
             return vec![AstNode {
-                node_type: expr.type_id.clone(),
+                node_type: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
+                    "Expression type ID '{}' should have corresponding enum variant", expr.type_id)),
                 val: None,
                 children
             }];
         }
         CstNode::Token(token) => {
-            if token.value.is_some() || PRESERVE_TOKENS.contains(&token.type_id.as_str()) {
+            if PRESERVE_TOKENS.contains(&token.type_id.as_str()) || token.value.is_some() {
                 return vec![AstNode {
-                    node_type: token.type_id.clone(),
+                    node_type: AstNodeType::from_str(token.type_id.as_str()).unwrap_or_else(|_| panic!(
+                        "Token type '{}' with value should have corresponding enum variant", token.type_id)),
                     val: token.value.clone(),
                     children: vec![],
                 }];
             } else if OPERATOR_TOKENS.contains(&token.type_id.as_str()) {
                 return vec![AstNode {
-                    node_type: "Unknown".to_string(),
+                    node_type: AstNodeType::Unknown,
                     val: Some(token.type_id.clone()),
                     children: vec![],
                 }];
