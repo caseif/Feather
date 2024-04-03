@@ -1,44 +1,44 @@
 OptNewline      := (Newline)
                  | Epsilon
 
-IntType         := (TypeInt8)
+TypeInt         := (TypeInt8)
                  | (TypeInt16)
                  | (TypeInt32)
                  | (TypeInt64)
 
-UintType        := (TypeUint8)
+TypeUint        := (TypeUint8)
                  | (TypeUint16)
                  | (TypeUint32)
                  | (TypeUint64)
 
-FloatType       := (TypeFloat32)
+TypeFloat       := (TypeFloat32)
                  | (TypeFloat64)
 
-BuiltInType     := IntType
-                 | UintType
-                 | FloatType
+TypeBuiltIn     := TypeInt
+                 | TypeUint
+                 | TypeFloat
                  | (TypeBool)
                  | (TypeChar)
                  | (TypeString)
 
-ComplexType     := (Identifier)
+TypeComplex     := (Identifier)
 
 ArrayModNaught  := Expression
                  | Epsilon
 
 ArraySelector   := (OpenBracket) ArrayModNaught (CloseBracket)
 
-ArrayType       := Type ArraySelector
+TypeArray       := Type ArraySelector
 
 TupleTypes      := Type (Comma) TupleTypes
                  | Type
 
-TupleType       := (OpenParen) TupleTypes (CloseParen)
+TypeTuple       := (OpenParen) TupleTypes (CloseParen)
 
-Type            := BuiltInType
-                 | ComplexType
-                 | ArrayType
-                 | TupleType
+Type            := TypeBuiltIn
+                 | TypeComplex
+                 | TypeArray
+                 | TypeTuple
 
 Literal         := (StringLiteral)
                  | (IntegerLiteral)

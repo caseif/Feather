@@ -7,24 +7,6 @@ use crate::parser::ParseError;
 use crate::parser::cst::generate_cst;
 
 #[derive(Clone, Debug, Serialize)]
-pub enum AstNodeType {
-    Program,
-    Block,
-    Expression,
-    ImportStatement,
-    ConstDecl,
-    VarDecl,
-    ClassDef,
-    FnDef,
-    ReturnStatement,
-    IfElseChain,
-    IfBlock,
-    ElseIfBlock,
-    ElseBlock,
-    Assignment,
-}
-
-#[derive(Clone, Debug, Serialize)]
 pub struct AstNode {
     node_type: String,
     val: Option<String>,
@@ -46,18 +28,20 @@ enum UniversalRule {
 
 lazy_static! {
     static ref EXPR_RULES: HashMap<&'static str, UniversalRule> = HashMap::from([
-        ("IntType", UniversalRule::Flatten),
-        ("UintType", UniversalRule::Flatten),
-        ("FloatType", UniversalRule::Flatten),
-        ("BuiltInType", UniversalRule::Flatten),
+        ("TypeInt", UniversalRule::Flatten),
+        ("TypeUint", UniversalRule::Flatten),
+        ("TypeFloat", UniversalRule::Flatten),
+        ("TypeBuiltIn", UniversalRule::Flatten),
         ("Type", UniversalRule::Flatten),
         ("Literal", UniversalRule::Flatten),
         ("ArrayModNaught", UniversalRule::Flatten),
         ("ArraySelector", UniversalRule::Flatten),
         ("TupleTypes", UniversalRule::Flatten),
+        ("Parenthetical", UniversalRule::Flatten),
         ("TupleElements", UniversalRule::Flatten),
         ("TupleElsPrime", UniversalRule::Flatten),
         ("InitListEntries", UniversalRule::Flatten),
+        ("Lval", UniversalRule::Flatten),
         ("RangeBound", UniversalRule::Flatten),
         ("Range", UniversalRule::Flatten),
         ("SliceSelector", UniversalRule::Flatten),
@@ -83,7 +67,7 @@ lazy_static! {
         ("OpBoolAnd", UniversalRule::Flatten),
         ("OpBoolOr", UniversalRule::Flatten),
         ("Statement", UniversalRule::Flatten),
-        ("ComplexType", UniversalRule::PullUpChildValue),
+        ("TypeComplex", UniversalRule::PullUpChildValue),
         ("ExprOpUnary", UniversalRule::PullUpOperator),
         ("ExprOpNumMult", UniversalRule::PullUpOperator),
         ("ExprOpNumAdd", UniversalRule::PullUpOperator),

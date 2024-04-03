@@ -7,4 +7,4 @@ pub struct ParseError {
     pub next_token: Token,
 }
 
-pub use self::ast::generate_ast;
+pub use self::ast::{Ast, AstNode, generate_ast};
