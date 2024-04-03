@@ -26,9 +26,9 @@ TypeComplex     := (Identifier)
 ArrayModNaught  := Expression
                  | Epsilon
 
-ArraySelector   := (OpenBracket) ArrayModNaught (CloseBracket)
+ArrayModifier   := (OpenBracket) ArrayModNaught (CloseBracket)
 
-TypeArray       := Type ArraySelector
+TypeArray       := Type ArrayModifier
 
 TupleTypes      := Type (Comma) TupleTypes
                  | Type
@@ -40,11 +40,11 @@ Type            := TypeBuiltIn
                  | TypeArray
                  | TypeTuple
 
-Literal         := (StringLiteral)
-                 | (IntegerLiteral)
-                 | (HexLiteral)
-                 | (DecimalLiteral)
-                 | (BooleanLiteral)
+Literal         := (LiteralString)
+                 | (LiteralInteger)
+                 | (LiteralHex)
+                 | (LiteralDecimal)
+                 | (LiteralBoolean)
                  | (Nil)
 
 Parenthetical   := (OpenParen) OptNewline Expression OptNewline (CloseParen)
@@ -65,28 +65,28 @@ InitList        := (OpenBrace) InitListEntries (CloseBrace)
 
 TypeAnnotation  := (Colon) Type
 
-VarDecl         := (VarDeclKeyword) (Identifier) TypeAnnotation
-                 | (VarDeclKeyword) (Identifier)
+DeclVar         := (DeclVarKeyword) (Identifier) TypeAnnotation
+                 | (DeclVarKeyword) (Identifier)
 
-ConstDecl       := (ConstQualifier) (Identifier) TypeAnnotation
+DeclConst       := (ConstQualifier) (Identifier) TypeAnnotation
 
-Lval            := VarDecl
-                 | ConstDecl
+Lval            := DeclVar
+                 | DeclConst
                  | (Identifier)
 
-StaticAccess    := Primary (StaticAccessor) OptNewline (Identifier)
+AccessStatic    := Primary (AccessorStatic) OptNewline (Identifier)
 
-InstancedAccess := Primary (InstanceAccessor) OptNewline (Identifier)
+AccessInstanced := Primary (AccessorInstance) OptNewline (Identifier)
 
 IndexSelector   := (OpenBracket) Expression (CloseBracket)
 
-IndexedAccess   := Primary IndexSelector
+AccessIndexed   := Primary IndexSelector
 
 RangeBound      := Primary
 
-RangeExclusive  := RangeBound (RangeExclDelimiter) RangeBound
+RangeExclusive  := RangeBound (RangeDelimiterExcl) RangeBound
 
-RangeInclusive  := RangeBound (RangeInclDelimiter) RangeBound
+RangeInclusive  := RangeBound (RangeDelimiterIncl) RangeBound
 
 Range           := RangeExclusive
                  | RangeInclusive
@@ -94,21 +94,21 @@ Range           := RangeExclusive
 SliceBound      := ExprOpNumAdd
                  | Epsilon
 
-SliceExclusive  := SliceBound (RangeExclDelimiter) SliceBound
+SliceExclusive  := SliceBound (RangeDelimiterExcl) SliceBound
 
-SliceInclusive  := SliceBound (RangeInclDelimiter) SliceBound
+SliceInclusive  := SliceBound (RangeDelimiterIncl) SliceBound
 
 Slice           := SliceExclusive
                  | SliceInclusive
 
 SliceSelector   := (OpenBracket) Slice (CloseBracket)
 
-SlicedAccess    := Primary SliceSelector
+AccessSliced    := Primary SliceSelector
 
 Invokable       := (Identifier)
-                 | StaticAccess
-                 | InstancedAccess
-                 | IndexedAccess
+                 | AccessStatic
+                 | AccessInstanced
+                 | AccessIndexed
                  | FnInvocation
                  | Parenthetical
 
@@ -143,13 +143,13 @@ OpBoolAnd       := (And)
 OpBoolOr        := (Or)
 
 Primary         := (Identifier)
-                 | StaticAccess
-                 | InstancedAccess
+                 | AccessStatic
+                 | AccessInstanced
                  | Literal
                  | Parenthetical
                  | FnInvocation
-                 | IndexedAccess
-                 | SlicedAccess
+                 | AccessIndexed
+                 | AccessSliced
                  | Tuple
                  | InitList
 
@@ -180,16 +180,16 @@ Assignment      := Lval (Assign) OptNewline Expression
 
 Block           := (OpenBrace) StatementList (CloseBrace)
 
-IfStatement     := (If) Expression OptNewline Block
+IfBlock         := (If) Expression OptNewline Block
 
-ElseIfStatement := (ElseIf) Expression OptNewline Block
+ElseIfBlock     := (ElseIf) Expression OptNewline Block
 
-ElseStatement   := (Else) OptNewline Block
+ElseBlock       := (Else) OptNewline Block
 
-IfChain         := IfStatement IfChainPrime
+IfChain         := IfBlock IfChainPrime
 
-IfChainPrime    := ElseIfStatement IfChainPrime
-                 | ElseStatement
+IfChainPrime    := ElseIfBlock IfChainPrime
+                 | ElseBlock
                  | Epsilon
 
 WhileLoop       := (While) Expression OptNewline Block
@@ -220,13 +220,13 @@ FunctionSig     := (FunctionDefKeyword) (Identifier) (OpenParen) OptNewline FnPa
 
 FunctionDef     := FunctionSig OptNewline Block
 
-ClassField      := (Identifier) TypeAnnotation (Assign) (Expression)
+ClassFieldDef   := (Identifier) TypeAnnotation (Assign) (Expression)
                  | (Identifier) TypeAnnotation
 
-ClassFields     := ClassField (Newline) ClassFldsPrime
+ClassFields     := ClassFieldDef (Newline) ClassFldsPrime
                  | Epsilon
 
-ClassFldsPrime  := ClassField (Newline) ClassFldsPrime
+ClassFldsPrime  := ClassFieldDef (Newline) ClassFldsPrime
                  | Epsilon
 
 ClassFunctions  := FunctionDef (Newline) ClassFnsPrime
@@ -255,8 +255,8 @@ StatementNaught := FunctionDef
                  | FnInvocation
                  | ReturnStatement
                  | Assignment
-                 | VarDecl
-                 | ConstDecl
+                 | DeclVar
+                 | DeclConst
                  | IfChain
                  | WhileLoop
                  | ForLoop

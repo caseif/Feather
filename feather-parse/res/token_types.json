@@ -1,7 +1,7 @@
 {
   "token_types": [
     {
-      "id": "StringLiteral",
+      "id": "LiteralString",
       "regex": "\"((?:[^\"\\\n]|\\.)*)\""
     },
     {
@@ -61,19 +61,19 @@
       "regex": "string"
     },
     {
-      "id": "DecimalLiteral",
+      "id": "LiteralDecimal",
       "regex": "(\\d+\\.\\d+)"
     },
     {
-      "id": "IntegerLiteral",
+      "id": "LiteralInteger",
       "regex": "(\\d+)"
     },
     {
-      "id": "HexLiteral",
+      "id": "LiteralHex",
       "regex": "(0x[0-9A-Fa-f]+)"
     },
     {
-      "id": "BooleanLiteral",
+      "id": "LiteralBoolean",
       "regex": "(true|false)"
     },
     {
@@ -89,7 +89,7 @@
       "regex": "fn"
     },
     {
-      "id": "VarDeclKeyword",
+      "id": "DeclVarKeyword",
       "regex": "let"
     },
     {
@@ -137,11 +137,11 @@
       "regex": "nil"
     },
     {
-      "id": "RangeInclDelimiter",
+      "id": "RangeDelimiterIncl",
       "regex": "\\.\\.="
     },
     {
-      "id": "RangeExclDelimiter",
+      "id": "RangeDelimiterExcl",
       "regex": "\\.\\."
     },
     {
@@ -177,11 +177,11 @@
       "regex": "]"
     },
     {
-      "id": "StaticAccessor",
+      "id": "AccessorStatic",
       "regex": "::"
     },
     {
-      "id": "InstanceAccessor",
+      "id": "AccessorInstance",
       "regex": "\\."
     },
     {

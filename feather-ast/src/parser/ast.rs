@@ -6,6 +6,77 @@ use lazy_static::lazy_static;
 use crate::parser::ParseError;
 use crate::parser::cst::generate_cst;
 
+pub enum AstNodeType {
+    TypeInt8,
+    TypeInt16,
+    TypeInt32,
+    TypeInt64,
+    TypeFloat32,
+    TypeFloat64,
+    TypeBool,
+    TypeChar,
+    TypeString,
+    TypeComplex,
+    TypeArray,
+    TypeTuple,
+    LiteralString,
+    LiteralInteger,
+    LiteralHex,
+    LiteralDecimal,
+    LiteralBoolean,
+    Tuple,
+    InitList,
+    TypeAnnotation,
+    DeclVar,
+    DeclConst,
+    AccessStatic,
+    AccessInstanced,
+    AccessIndexed,
+    AccessSliced,
+    RangeExclusive,
+    RangeInclusive,
+    SliceExclusive,
+    SliceInclusive,
+    FnParamList,
+    FnInvocation,
+    Expression,
+    Assignment,
+    Block,
+    IfBlock,
+    ElseIfBlock,
+    ElseBlock,
+    WhileLoop,
+    ForLoop,
+    ContinueStatement,
+    BreakStatement,
+    ImportStatement,
+    ReturnType,
+    FunctionSig,
+    FunctionDef,
+    ClassFields,
+    ClassFieldDef,
+    ClassFunctions,
+    ClassDef,
+    ReturnStatement,
+    Annotation,
+    Program,
+    OpNot,
+    OpNegate,
+    OpMultiply,
+    OpDivide,
+    OpAdd,
+    OpSubtract,
+    OpModulo,
+    CmpLess,
+    CmpLessEq,
+    CmpGreater,
+    CmpGreaterEq,
+    CmpEquals,
+    CmpNotEquals,
+    OpAnd,
+    OpOr,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct AstNode {
     node_type: String,
@@ -19,11 +90,16 @@ pub struct Ast {
 }
 
 enum UniversalRule {
-    Remove,
+    // Remove the node's subtree entirely.
+    Prune,
+    // Replace the node with its children, effectively pulling them up one level.
     Flatten,
+    // Leave the node in place but replace its value with that of its (only) child.
     PullUpChildValue,
-    // flattens if only 1 child, otherwise renames based on nth child and removes it
+    // Flatten if only 1 child, otherwise rename based on type of nth child and
+    // remove the child (see OPERATOR_RULES for specific rules).
     PullUpOperator,
+    // Everything else is implicitly left in place as-is.
 }
 
 lazy_static! {
@@ -51,9 +127,7 @@ lazy_static! {
         ("IfChainPrime", UniversalRule::Flatten),
         ("ForParam", UniversalRule::Flatten),
         ("FnPmDefsPrime", UniversalRule::Flatten),
-        ("ClassFields", UniversalRule::Flatten),
         ("ClassFldsPrime", UniversalRule::Flatten),
-        ("ClassFunctions", UniversalRule::Flatten),
         ("ClassFnsPrime", UniversalRule::Flatten),
         ("Annotatable", UniversalRule::Flatten),
         ("StatementNaught", UniversalRule::Flatten),
@@ -75,9 +149,9 @@ lazy_static! {
         ("ExprCmpBoolEq", UniversalRule::PullUpOperator),
         ("ExprOpBoolAnd", UniversalRule::PullUpOperator),
         ("ExprOpBoolOr", UniversalRule::PullUpOperator),
-        ("OptNewline", UniversalRule::Remove),
-        ("RangeDelimiter", UniversalRule::Remove),
-        ("StatementEnd", UniversalRule::Remove),
+        ("OptNewline", UniversalRule::Prune),
+        ("RangeDelimiter", UniversalRule::Prune),
+        ("StatementEnd", UniversalRule::Prune),
     ]);
 
     // Rules for operator expressions specifically. The value is the index of
@@ -131,6 +205,11 @@ lazy_static! {
         "TypeBool",
         "TypeChar",
         "TypeString",
+        "LiteralString",
+        "LiteralInteger",
+        "LiteralHex",
+        "LiteralDecimal",
+        "LiteralBoolean",
         "Nil",
         "Not",
         "Plus",
@@ -187,7 +266,7 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
         CstNode::Expression(expr) => {
             if let Some(rule) = EXPR_RULES.get(expr.type_id.as_str()) {
                 match rule {
-                    UniversalRule::Remove => {
+                    UniversalRule::Prune => {
                         return vec![];
                     }
                     UniversalRule::Flatten => {
