@@ -130,7 +130,7 @@ fn do_build_cst(args: BuildCstArgs) {
         },
         Err(e) => {
             let t = e.next_token;
-            eprintln!("Parse failed at {}:{}", t.line, t.col);
+            eprintln!("Parse failed at {}:{}", t.source_loc.line, t.source_loc.col);
         }
     }
 }
@@ -152,7 +152,7 @@ fn do_build_ast(args: BuildAstArgs) {
         },
         Err(e) => {
             let t = e.next_token;
-            eprintln!("Parse failed at {}:{}", t.line, t.col);
+            eprintln!("Parse failed at {}:{}", t.source_loc.line, t.source_loc.col);
         }
     }
 }

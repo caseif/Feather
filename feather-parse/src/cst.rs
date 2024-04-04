@@ -7,6 +7,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
+use crate::SourceLocation;
 use crate::tokenizer::{get_all_token_defs, Token};
 
 const SYMBOL_EPSILON: &str = "Epsilon";
@@ -33,6 +34,7 @@ type ProductionSet = Vec<Production>;
 pub struct Expression {
     pub type_id: String,
     pub children: Vec<CstNode>,
+    pub source_loc: SourceLocation,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -240,7 +242,6 @@ fn compute_first_sets() -> HashMap<String, BTreeSet<String>> {
 }
 
 #[allow(unused)]
-
 fn compute_lookahead_tokens(prod: &Production, pos: usize, cur_lookahead: &String,
     first_sets: &HashMap<String, BTreeSet<String>>) -> BTreeSet<String> {
     let mut cur_lookaheads = BTreeSet::<String>::new();

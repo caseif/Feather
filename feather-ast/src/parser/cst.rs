@@ -53,9 +53,40 @@ pub fn generate_cst(tokens: TokenList) -> Result<Cst, ParseError> {
                     }
                 }
 
+                let children: Vec<_> = popped_states.iter().map(|(_, node)| node).cloned().collect();
+                let expr_source_loc = if children.len() > 1 {
+                    let begin_loc = match &children[0] {
+                        CstNode::Expression(expr) => &expr.source_loc,
+                        CstNode::Token(token) => &token.source_loc,
+                    };
+                    let end_loc = match &children[children.len() - 1] {
+                        CstNode::Expression(expr) => &expr.source_loc,
+                        CstNode::Token(token) => &token.source_loc,
+                    };
+                    SourceLocation {
+                        line: begin_loc.line,
+                        col: begin_loc.col,
+                        len: end_loc.raw_offset - begin_loc.raw_offset + end_loc.len,
+                        raw_offset: begin_loc.raw_offset,
+                    }
+                } else if children.len() == 1 {
+                    match &children[0] {
+                        CstNode::Expression(expr) => expr.source_loc.clone(),
+                        CstNode::Token(token) => token.source_loc.clone(),
+                    }
+                } else {
+                    SourceLocation {
+                        line: 0,
+                        col: 0,
+                        len: 0,
+                        raw_offset: 0,
+                    }
+                };
+
                 let new_node = CstNode::Expression(Expression {
                     type_id: prod.name.clone(),
-                    children: popped_states.iter().map(|(_, node)| node).cloned().collect(),
+                    children,
+                    source_loc: expr_source_loc,
                 });
                 let (new_state, _) = popped_states[0];
                 stack.push((new_state, new_node));

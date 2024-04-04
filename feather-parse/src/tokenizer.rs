@@ -4,6 +4,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp;
 use std::fmt::{Display, Formatter};
 
+use crate::SourceLocation;
+
 const TOKEN_EOF: &str = "$";
 const TOKEN_NEWLINE: &str = "Newline";
 
@@ -24,9 +26,7 @@ pub struct Token {
     #[serde(rename = "type")]
     pub type_id: String,
     pub value: Option<String>,
-    pub line: usize,
-    pub col: usize,
-    pub len: usize,
+    pub source_loc: SourceLocation,
 }
 
 impl Display for Token {
@@ -118,9 +118,12 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
                     tokens.push(Token {
                         type_id: token_def.id.to_owned(),
                         value,
-                        line: line_num,
-                        col: col_num,
-                        len: m.get(0).expect("Regex match does not contain any groups").len(),
+                        source_loc: SourceLocation {
+                            line: line_num,
+                            col: col_num,
+                            len: m.get(0).expect("Regex match does not contain any groups").len(),
+                            raw_offset: cursor,
+                        },
                     });
 
                     found_token = true;
@@ -147,17 +150,23 @@ pub fn tokenize(str: &String) -> Result<TokenList, InvalidTokenError> {
         tokens.push(Token {
             type_id: TOKEN_NEWLINE.to_string(),
             value: None,
-            line: last_line,
-            col: last_line_last_col,
-            len: 0,
+            source_loc: SourceLocation {
+                line: last_line,
+                col: last_line_last_col,
+                len: 0,
+                raw_offset: cursor,
+            },
         });
     }
     tokens.push(Token {
         type_id: TOKEN_EOF.to_string(),
         value: None,
-        line: last_line,
-        col: last_line_last_col,
-        len: 0,
+        source_loc: SourceLocation {
+            line: last_line,
+            col: last_line_last_col,
+            len: 0,
+            raw_offset: cursor,
+        },
     });
 
     return Ok(TokenList { tokens });
