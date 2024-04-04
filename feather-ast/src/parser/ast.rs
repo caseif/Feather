@@ -3,12 +3,12 @@ use lazy_static::lazy_static;
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 
 use crate::parser::ParseError;
 use crate::parser::cst::generate_cst;
 
-#[derive(Clone, Debug, Hash, PartialEq, Serialize, EnumString)]
+#[derive(Clone, Debug, Display, Hash, PartialEq, Serialize, EnumString)]
 pub enum AstNodeType {
     // used for operator tokens
     Unknown,
@@ -17,6 +17,10 @@ pub enum AstNodeType {
     TypeInt16,
     TypeInt32,
     TypeInt64,
+    TypeUint8,
+    TypeUint16,
+    TypeUint32,
+    TypeUint64,
     TypeFloat32,
     TypeFloat64,
     TypeBool,
@@ -91,14 +95,14 @@ pub enum AstNodeType {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct AstNode {
-    node_type: AstNodeType,
-    val: Option<String>,
-    children: Vec<AstNode>,
+    pub ty: AstNodeType,
+    pub val: Option<String>,
+    pub children: Vec<AstNode>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Ast {
-    root: AstNode,
+    pub root: AstNode,
 }
 
 enum UniversalRule {
@@ -297,7 +301,7 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                         }
 
                         return vec![AstNode {
-                            node_type: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
+                            ty: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
                                 "Expression type string '{}' should have corresponding enum variant", expr.type_id)),
                             val: children[0].val.clone(),
                             children: vec![]
@@ -318,7 +322,7 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                             let mapped_type = mappings.get(op_token.as_str()).unwrap_or_else(|| panic!(
                                 "Operator token '{}' should have corresponding name mapping", op_token));
                             return vec![AstNode {
-                                node_type: mapped_type.clone(),
+                                ty: mapped_type.clone(),
                                 val: None,
                                 children: [&children[0..*child_index], &children[(*child_index + 1)..]]
                                         .concat().clone(),
@@ -329,7 +333,7 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
             }
 
             return vec![AstNode {
-                node_type: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
+                ty: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
                     "Expression type ID '{}' should have corresponding enum variant", expr.type_id)),
                 val: None,
                 children
@@ -338,14 +342,14 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
         CstNode::Token(token) => {
             if PRESERVE_TOKENS.contains(&token.type_id.as_str()) || token.value.is_some() {
                 return vec![AstNode {
-                    node_type: AstNodeType::from_str(token.type_id.as_str()).unwrap_or_else(|_| panic!(
+                    ty: AstNodeType::from_str(token.type_id.as_str()).unwrap_or_else(|_| panic!(
                         "Token type '{}' with value should have corresponding enum variant", token.type_id)),
                     val: token.value.clone(),
                     children: vec![],
                 }];
             } else if OPERATOR_TOKENS.contains(&token.type_id.as_str()) {
                 return vec![AstNode {
-                    node_type: AstNodeType::Unknown,
+                    ty: AstNodeType::Unknown,
                     val: Some(token.type_id.clone()),
                     children: vec![],
                 }];
