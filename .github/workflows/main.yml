@@ -1,0 +1,30 @@
+name: Feather
+on: [push, pull_request]
+jobs:
+  Build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-12]
+        configuration: [Release, Dev]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Set env vars for current matrix configuration
+        shell: pwsh
+        run: |
+          $config_id = "${{ matrix.configuration }}".ToLower()
+          $os_name = "${{ runner.os }}".ToLower()
+          echo "OS_NAME=$os_name" >> "$env:GITHUB_ENV"
+          echo "CONFIG_ID=$config_id" >> $env:GITHUB_ENV
+      - name: Build
+        run: cargo build --profile ${{ env.CONFIG_ID }}
+      - name: Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: feather_dist-${{ env.OS_NAME }}-${{ env.CONFIG_ID }}
+          path: target/${{ env.CONFIG_ID }}/feather-cli
