@@ -98,7 +98,7 @@ fn parse_bnf(content: &str) -> Result<IndexMap<String, ProductionSet>, String> {
 
     let mut cur_set: Option<(String, ProductionSet)> = None;
     let mut line_num = 0;
-    for line in content.split('\n') {
+    for line in content.replace('\r', "").split('\n') {
         line_num += 1;
 
         if line.is_empty() {
