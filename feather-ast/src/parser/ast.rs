@@ -1,4 +1,4 @@
-use featherparse::{Cst, CstNode, TokenList};
+use featherparse::{Cst, CstNode, SourceLocation, TokenList};
 use lazy_static::lazy_static;
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
@@ -11,7 +11,7 @@ use crate::parser::cst::generate_cst;
 #[derive(Clone, Debug, Display, Hash, PartialEq, Serialize, EnumString)]
 pub enum AstNodeType {
     // used for operator tokens
-    Unknown,
+    Transient,
     // symbols directly from tokens
     TypeInt8,
     TypeInt16,
@@ -26,9 +26,6 @@ pub enum AstNodeType {
     TypeBool,
     TypeChar,
     TypeString,
-    TypeComplex,
-    TypeArray,
-    TypeTuple,
     LiteralString,
     LiteralInteger,
     LiteralHex,
@@ -37,6 +34,9 @@ pub enum AstNodeType {
     Nil,
     Identifier,
     // symbols from the formal grammar
+    TypeComplex,
+    TypeArray,
+    TypeTuple,
     Tuple,
     InitList,
     TypeAnnotation,
@@ -98,6 +98,7 @@ pub struct AstNode {
     pub ty: AstNodeType,
     pub val: Option<String>,
     pub children: Vec<AstNode>,
+    pub source_loc: SourceLocation,
 }
 
 #[derive(Debug, Serialize)]
@@ -123,6 +124,7 @@ lazy_static! {
         ("TypeInt", UniversalRule::Flatten),
         ("TypeUint", UniversalRule::Flatten),
         ("TypeFloat", UniversalRule::Flatten),
+        ("ArrayModifier", UniversalRule::Flatten),
         ("TypeBuiltIn", UniversalRule::Flatten),
         ("Type", UniversalRule::Flatten),
         ("Literal", UniversalRule::Flatten),
@@ -134,8 +136,10 @@ lazy_static! {
         ("TupleElsPrime", UniversalRule::Flatten),
         ("InitListEntries", UniversalRule::Flatten),
         ("Lval", UniversalRule::Flatten),
+        ("IndexSelector", UniversalRule::Flatten),
         ("RangeBound", UniversalRule::Flatten),
         ("Range", UniversalRule::Flatten),
+        ("SliceBound", UniversalRule::Flatten),
         ("SliceSelector", UniversalRule::Flatten),
         ("Slice", UniversalRule::Flatten),
         ("Invokable", UniversalRule::Flatten),
@@ -304,7 +308,8 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                             ty: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
                                 "Expression type string '{}' should have corresponding enum variant", expr.type_id)),
                             val: children[0].val.clone(),
-                            children: vec![]
+                            children: vec![],
+                            source_loc: children[0].source_loc.clone(),
                         }];
                     }
                     UniversalRule::PullUpOperator => {
@@ -318,25 +323,46 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                             if *child_index >= children.len() {
                                 panic!("Operator expression '{}' does not have enough children", expr.type_id);
                             }
+                            debug_assert!(children.len() > 0);
                             let op_token = children[*child_index].val.as_ref().unwrap();
                             let mapped_type = mappings.get(op_token.as_str()).unwrap_or_else(|| panic!(
                                 "Operator token '{}' should have corresponding name mapping", op_token));
+                            let last_child = &children[children.len() - 1];
+                            let total_len = last_child.source_loc.raw_offset + last_child.source_loc.len
+                                    - children[0].source_loc.raw_offset;
                             return vec![AstNode {
                                 ty: mapped_type.clone(),
                                 val: None,
                                 children: [&children[0..*child_index], &children[(*child_index + 1)..]]
                                         .concat().clone(),
+                                source_loc: SourceLocation {
+                                    line: children[0].source_loc.line,
+                                    col: children[0].source_loc.col,
+                                    len: total_len,
+                                    raw_offset: children[0].source_loc.raw_offset,
+                                },
                             }];
                         }
                     }
                 }
             }
 
+            assert!(!children.is_empty());
+            let last_child = &children[children.len() - 1];
+            let total_len = last_child.source_loc.raw_offset + last_child.source_loc.len
+                    - children[0].source_loc.raw_offset;
+            let new_source_loc = SourceLocation {
+                line: children[0].source_loc.line,
+                col: children[0].source_loc.col,
+                len: total_len,
+                raw_offset: children[0].source_loc.raw_offset,
+            };
             return vec![AstNode {
                 ty: AstNodeType::from_str(expr.type_id.as_str()).unwrap_or_else(|_| panic!(
                     "Expression type ID '{}' should have corresponding enum variant", expr.type_id)),
                 val: None,
-                children
+                children: children.into_iter().filter(|child| child.ty != AstNodeType::Transient).collect(),
+                source_loc: new_source_loc,
             }];
         }
         CstNode::Token(token) => {
@@ -346,15 +372,15 @@ fn process_cst_node(cst_node: &CstNode, children: Vec<AstNode>) -> Vec<AstNode> 
                         "Token type '{}' with value should have corresponding enum variant", token.type_id)),
                     val: token.value.clone(),
                     children: vec![],
-                }];
-            } else if OPERATOR_TOKENS.contains(&token.type_id.as_str()) {
-                return vec![AstNode {
-                    ty: AstNodeType::Unknown,
-                    val: Some(token.type_id.clone()),
-                    children: vec![],
+                    source_loc: token.source_loc.clone(),
                 }];
             } else {
-                return vec![];
+                return vec![AstNode {
+                    ty: AstNodeType::Transient,
+                    val: Some(token.type_id.clone()),
+                    children: vec![],
+                    source_loc: token.source_loc.clone(),
+                }];
             }
         }
     }
@@ -378,7 +404,7 @@ fn convert_to_ast(cst: &Cst) -> Result<Ast, ParseError> {
         child_map.entry(parent_path).or_insert(vec![]).append(&mut new_nodes);
     }
 
-    panic!("Flat tree did not contain root node!");
+    panic!("Flattened tree did not contain root node!");
 }
 
 pub fn generate_ast(tokens: TokenList) -> Result<Ast, ParseError> {
